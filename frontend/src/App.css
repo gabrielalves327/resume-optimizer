@@ -72,6 +72,13 @@ body {
   margin: 40px auto;
   max-width: 600px;
   background: white;
+  transition: all 0.3s ease;
+}
+
+.upload-area.dragging {
+  border-color: #2563eb;
+  background: #eff6ff;
+  transform: scale(1.02);
 }
 
 .upload-icon {
@@ -106,10 +113,48 @@ body {
   font-weight: 600;
   cursor: pointer;
   margin-top: 20px;
+  display: inline-block;
 }
 
 .btn-primary:hover {
   background: #1d4ed8;
+}
+
+.btn-upload {
+  background: #10b981;
+  color: white;
+  padding: 15px 40px;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 20px;
+}
+
+.btn-upload:hover {
+  background: #059669;
+}
+
+/* Validation Messages */
+.error-message {
+  background: #fee2e2;
+  color: #991b1b;
+  padding: 12px 20px;
+  border-radius: 8px;
+  margin-top: 20px;
+  font-weight: 500;
+  border: 1px solid #fecaca;
+}
+
+.success-message {
+  background: #d1fae5;
+  color: #065f46;
+  padding: 12px 20px;
+  border-radius: 8px;
+  margin-top: 20px;
+  font-weight: 500;
+  border: 1px solid #a7f3d0;
 }
 
 .features-list {

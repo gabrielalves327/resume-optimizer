@@ -4,6 +4,10 @@ import './App.css'
 function App() {
   const [apiStatus, setApiStatus] = useState('checking...')
   const [apiMessage, setApiMessage] = useState('')
+  const [selectedFile, setSelectedFile] = useState(null)
+  const [uploadError, setUploadError] = useState('')
+  const [uploadSuccess, setUploadSuccess] = useState('')
+  const [isDragging, setIsDragging] = useState(false)
 
   useEffect(() => {
     // Test API connection on load
@@ -18,6 +22,84 @@ function App() {
         setApiMessage('Make sure Flask backend is running on port 5000')
       })
   }, [])
+
+  // Validate file type and size
+  const validateFile = (file) => {
+    const allowedTypes = ['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document']
+    const maxSize = 5 * 1024 * 1024 // 5MB in bytes
+
+    // Check file type
+    if (!allowedTypes.includes(file.type)) {
+      return 'Please upload a PDF or DOCX file only.'
+    }
+
+    // Check file size
+    if (file.size > maxSize) {
+      return 'File size must be less than 5MB.'
+    }
+
+    return null // No errors
+  }
+
+  // Handle file selection
+  const handleFileSelect = (e) => {
+    const file = e.target.files[0]
+    if (file) {
+      processFile(file)
+    }
+  }
+
+  // Handle drag and drop
+  const handleDragOver = (e) => {
+    e.preventDefault()
+    setIsDragging(true)
+  }
+
+  const handleDragLeave = (e) => {
+    e.preventDefault()
+    setIsDragging(false)
+  }
+
+  const handleDrop = (e) => {
+    e.preventDefault()
+    setIsDragging(false)
+    
+    const file = e.dataTransfer.files[0]
+    if (file) {
+      processFile(file)
+    }
+  }
+
+  // Process and validate file
+  const processFile = (file) => {
+    // Reset messages
+    setUploadError('')
+    setUploadSuccess('')
+
+    // Validate file
+    const error = validateFile(file)
+    if (error) {
+      setUploadError(error)
+      setSelectedFile(null)
+      return
+    }
+
+    // File is valid
+    setSelectedFile(file)
+    setUploadSuccess(`✓ ${file.name} is ready to upload (${(file.size / 1024).toFixed(2)} KB)`)
+  }
+
+  // Handle upload button click
+  const handleUpload = async () => {
+    if (!selectedFile) {
+      setUploadError('Please select a file first.')
+      return
+    }
+
+    // This will connect to backend in next task
+    console.log('Uploading file:', selectedFile.name)
+    setUploadSuccess(`File "${selectedFile.name}" validated and ready for backend processing!`)
+  }
 
   return (
     <div className="App">
@@ -34,11 +116,45 @@ function App() {
         <h1>Optimize Your Resume with AI</h1>
         <p>Get instant feedback and actionable insights to make your resume stand out</p>
         
-        <div className="upload-area">
+        <div 
+          className={`upload-area ${isDragging ? 'dragging' : ''}`}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+        >
           <div className="upload-icon">📄</div>
           <h3>Drop your resume here</h3>
           <p>Supports PDF, DOCX - Max 5MB</p>
-          <button className="btn-primary">Choose File</button>
+          
+          <input 
+            type="file" 
+            id="file-input" 
+            accept=".pdf,.docx"
+            onChange={handleFileSelect}
+            style={{ display: 'none' }}
+          />
+          
+          <label htmlFor="file-input" className="btn-primary">
+            Choose File
+          </label>
+
+          {uploadError && (
+            <div className="error-message">
+              ❌ {uploadError}
+            </div>
+          )}
+
+          {uploadSuccess && (
+            <div className="success-message">
+              {uploadSuccess}
+            </div>
+          )}
+
+          {selectedFile && (
+            <button className="btn-upload" onClick={handleUpload}>
+              Upload & Analyze
+            </button>
+          )}
         </div>
 
         <div className="features-list">
