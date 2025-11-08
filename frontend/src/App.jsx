@@ -8,6 +8,7 @@ function App() {
   const [uploadError, setUploadError] = useState('')
   const [uploadSuccess, setUploadSuccess] = useState('')
   const [isDragging, setIsDragging] = useState(false)
+  const [isUploading, setIsUploading] = useState(false)
 
   useEffect(() => {
     // Test API connection on load
@@ -89,16 +90,46 @@ function App() {
     setUploadSuccess(`✓ ${file.name} is ready to upload (${(file.size / 1024).toFixed(2)} KB)`)
   }
 
-  // Handle upload button click
+  // Handle upload button click - ACTUALLY UPLOADS TO BACKEND
   const handleUpload = async () => {
     if (!selectedFile) {
       setUploadError('Please select a file first.')
       return
     }
 
-    // This will connect to backend in next task
-    console.log('Uploading file:', selectedFile.name)
-    setUploadSuccess(`File "${selectedFile.name}" validated and ready for backend processing!`)
+    setIsUploading(true)
+    setUploadError('')
+    setUploadSuccess('')
+
+    // Create form data
+    const formData = new FormData()
+    formData.append('file', selectedFile)
+
+    try {
+      console.log('Sending file to backend...')
+      
+      // Send to backend
+      const response = await fetch('http://localhost:5000/api/upload', {
+        method: 'POST',
+        body: formData
+      })
+
+      console.log('Response received:', response)
+      
+      const data = await response.json()
+      console.log('Response data:', data)
+
+      if (response.ok) {
+        setUploadSuccess(`✓ ${data.message}! File: ${data.filename} (${(data.size / 1024).toFixed(2)} KB)`)
+      } else {
+        setUploadError(`❌ ${data.error}`)
+      }
+    } catch (error) {
+      console.error('Upload error:', error)
+      setUploadError('❌ Failed to upload. Make sure backend is running.')
+    } finally {
+      setIsUploading(false)
+    }
   }
 
   return (
@@ -140,7 +171,7 @@ function App() {
 
           {uploadError && (
             <div className="error-message">
-              ❌ {uploadError}
+              {uploadError}
             </div>
           )}
 
@@ -150,10 +181,16 @@ function App() {
             </div>
           )}
 
-          {selectedFile && (
+          {selectedFile && !isUploading && (
             <button className="btn-upload" onClick={handleUpload}>
               Upload & Analyze
             </button>
+          )}
+
+          {isUploading && (
+            <div className="uploading-message">
+              ⏳ Uploading...
+            </div>
           )}
         </div>
 
