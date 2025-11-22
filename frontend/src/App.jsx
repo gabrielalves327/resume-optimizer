@@ -117,17 +117,24 @@ function App() {
           setAnalysisResult(analysis)
         } catch (e) {
           console.error('Error parsing analysis:', e)
-          setUploadError('❌ Error parsing AI analysis')
+          setUploadError('❌ Error parsing AI analysis. Please try again.')
         }
       } else {
-        setUploadError(`❌ ${data.error}`)
+        setUploadError(`❌ ${data.error || 'Upload failed. Please try again.'}`)
       }
     } catch (error) {
       console.error('Upload error:', error)
-      setUploadError('❌ Failed to upload. Make sure backend is running.')
+      setUploadError('❌ Failed to connect to server. Make sure the backend is running on port 5000.')
     } finally {
       setIsUploading(false)
     }
+  }
+
+  const handleRetry = () => {
+    setUploadError('')
+    setUploadSuccess('')
+    setAnalysisResult(null)
+    setSelectedFile(null)
   }
 
   const getStatusColor = (status) => {
@@ -168,33 +175,41 @@ function App() {
               accept=".pdf,.docx"
               onChange={handleFileSelect}
               style={{ display: 'none' }}
+              disabled={isUploading}
             />
             
-            <label htmlFor="file-input" className="btn-primary">
+            <label htmlFor="file-input" className={`btn-primary ${isUploading ? 'disabled' : ''}`}>
               Choose File
             </label>
 
             {uploadError && (
               <div className="error-message">
                 {uploadError}
+                <button className="btn-retry" onClick={handleRetry}>
+                  Try Again
+                </button>
               </div>
             )}
 
-            {uploadSuccess && (
+            {uploadSuccess && !isUploading && (
               <div className="success-message">
                 {uploadSuccess}
               </div>
             )}
 
-            {selectedFile && !isUploading && (
+            {selectedFile && !isUploading && !uploadError && (
               <button className="btn-upload" onClick={handleUpload}>
                 Upload & Analyze with AI
               </button>
             )}
 
             {isUploading && (
-              <div className="uploading-message">
-                ⏳ Analyzing with AI... This may take 10-15 seconds
+              <div className="loading-container">
+                <div className="spinner"></div>
+                <div className="loading-message">
+                  <strong>⏳ Analyzing your resume with AI...</strong>
+                  <p>This may take 10-15 seconds. Please wait.</p>
+                </div>
               </div>
             )}
           </div>
@@ -207,6 +222,8 @@ function App() {
               <button className="btn-secondary" onClick={() => {
                 setAnalysisResult(null)
                 setSelectedFile(null)
+                setUploadError('')
+                setUploadSuccess('')
               }}>
                 Upload New Resume
               </button>
