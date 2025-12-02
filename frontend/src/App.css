@@ -411,3 +411,81 @@ body {
 .api-status strong {
   color: #1f2937;
 }
+
+/* History View Styles */
+.history-view {
+  max-width: 900px;
+  margin: 40px auto;
+  text-align: left;
+}
+
+.history-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+}
+
+.history-header h2 {
+  font-size: 32px;
+  color: #1f2937;
+}
+
+.history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.history-item {
+  background: white;
+  padding: 20px 25px;
+  border-radius: 12px;
+  border-left: 4px solid #2563eb;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.history-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+.history-item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.history-item-header h3 {
+  font-size: 18px;
+  color: #1f2937;
+  margin: 0;
+}
+
+.history-score {
+  font-size: 24px;
+  font-weight: bold;
+  color: #2563eb;
+}
+
+.history-item-date {
+  font-size: 14px;
+  color: #6b7280;
+}
+
+.empty-history {
+  text-align: center;
+  padding: 60px 20px;
+  background: white;
+  border-radius: 12px;
+  margin-top: 40px;
+}
+
+.empty-history p {
+  font-size: 18px;
+  color: #6b7280;
+  margin-bottom: 20px;
+}

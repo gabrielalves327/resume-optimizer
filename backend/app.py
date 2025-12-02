@@ -7,6 +7,8 @@ from openai import OpenAI
 from dotenv import load_dotenv
 import PyPDF2
 from docx import Document
+import sqlite3
+import json
 
 # Load environment variables
 load_dotenv()
@@ -18,6 +20,7 @@ CORS(app)
 UPLOAD_FOLDER = 'uploads'
 ALLOWED_EXTENSIONS = {'pdf', 'docx'}
 MAX_FILE_SIZE = 5 * 1024 * 1024  # 5MB
+DATABASE = 'resume_optimizer.db'
 
 # Create uploads folder if it doesn't exist
 if not os.path.exists(UPLOAD_FOLDER):
@@ -28,6 +31,80 @@ app.config['MAX_CONTENT_LENGTH'] = MAX_FILE_SIZE
 
 # Initialize OpenAI client
 openai_client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
+
+def init_database():
+    """Initialize SQLite database with analyses table"""
+    conn = sqlite3.connect(DATABASE)
+    cursor = conn.cursor()
+    
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS analyses (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            filename TEXT NOT NULL,
+            upload_date TEXT NOT NULL,
+            overall_score INTEGER,
+            analysis_data TEXT NOT NULL
+        )
+    ''')
+    
+    conn.commit()
+    conn.close()
+    print("✅ Database initialized")
+
+def save_analysis_to_db(filename, analysis_json):
+    """Save analysis result to database"""
+    try:
+        conn = sqlite3.connect(DATABASE)
+        cursor = conn.cursor()
+        
+        # Parse the analysis to get overall score
+        analysis_data = json.loads(analysis_json)
+        overall_score = analysis_data.get('overall_score', 0)
+        
+        cursor.execute('''
+            INSERT INTO analyses (filename, upload_date, overall_score, analysis_data)
+            VALUES (?, ?, ?, ?)
+        ''', (filename, datetime.now().isoformat(), overall_score, analysis_json))
+        
+        conn.commit()
+        analysis_id = cursor.lastrowid
+        conn.close()
+        
+        print(f"✅ Analysis saved to database with ID: {analysis_id}")
+        return analysis_id
+    except Exception as e:
+        print(f"❌ Error saving to database: {e}")
+        return None
+
+def get_all_analyses():
+    """Get all analyses from database"""
+    try:
+        conn = sqlite3.connect(DATABASE)
+        cursor = conn.cursor()
+        
+        cursor.execute('''
+            SELECT id, filename, upload_date, overall_score, analysis_data
+            FROM analyses
+            ORDER BY upload_date DESC
+        ''')
+        
+        rows = cursor.fetchall()
+        conn.close()
+        
+        analyses = []
+        for row in rows:
+            analyses.append({
+                'id': row[0],
+                'filename': row[1],
+                'upload_date': row[2],
+                'overall_score': row[3],
+                'analysis_data': json.loads(row[4])
+            })
+        
+        return analyses
+    except Exception as e:
+        print(f"❌ Error fetching analyses: {e}")
+        return []
 
 def allowed_file(filename):
     """Check if file extension is allowed"""
@@ -182,13 +259,27 @@ def upload_resume():
     if not analysis_result:
         return jsonify({"error": "AI analysis failed. Please try again."}), 500
     
+    # Save to database
+    analysis_id = save_analysis_to_db(filename, analysis_result)
+    
     # Return success response with analysis
     return jsonify({
         "message": "File uploaded and analyzed successfully",
         "filename": filename,
         "size": file_size,
         "status": "analyzed",
-        "analysis": analysis_result
+        "analysis": analysis_result,
+        "analysis_id": analysis_id
+    }), 200
+
+# History route - Get all analyses
+@app.route('/api/history', methods=['GET'])
+def get_history():
+    """Get all saved analyses"""
+    analyses = get_all_analyses()
+    return jsonify({
+        "count": len(analyses),
+        "analyses": analyses
     }), 200
 
 if __name__ == '__main__':
@@ -196,4 +287,8 @@ if __name__ == '__main__':
     print("📍 Server running on http://localhost:5000")
     print(f"📁 Upload folder: {UPLOAD_FOLDER}")
     print(f"🤖 OpenAI API: {'Connected' if os.getenv('OPENAI_API_KEY') else 'Not configured'}")
+    
+    # Initialize database
+    init_database()
+    
     app.run(debug=True, port=5000)

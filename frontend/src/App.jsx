@@ -10,6 +10,9 @@ function App() {
   const [isDragging, setIsDragging] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
   const [analysisResult, setAnalysisResult] = useState(null)
+  const [currentView, setCurrentView] = useState('home')
+  const [analysisHistory, setAnalysisHistory] = useState([])
+  const [isLoadingHistory, setIsLoadingHistory] = useState(false)
 
   useEffect(() => {
     // Test API connection on load
@@ -24,6 +27,26 @@ function App() {
         setApiMessage('Make sure Flask backend is running on port 5000')
       })
   }, [])
+
+  // Load history when switching to history view
+  useEffect(() => {
+    if (currentView === 'history') {
+      loadHistory()
+    }
+  }, [currentView])
+
+  const loadHistory = async () => {
+    setIsLoadingHistory(true)
+    try {
+      const response = await fetch('http://localhost:5000/api/history')
+      const data = await response.json()
+      setAnalysisHistory(data.analyses)
+    } catch (error) {
+      console.error('Error loading history:', error)
+    } finally {
+      setIsLoadingHistory(false)
+    }
+  }
 
   // Validate file type and size
   const validateFile = (file) => {
@@ -137,10 +160,34 @@ function App() {
     setSelectedFile(null)
   }
 
+  const handleStartNewAnalysis = () => {
+    setAnalysisResult(null)
+    setSelectedFile(null)
+    setUploadError('')
+    setUploadSuccess('')
+    setCurrentView('home')
+  }
+
+  const viewHistoryAnalysis = (analysis) => {
+    setAnalysisResult(analysis.analysis_data)
+    setCurrentView('results')
+  }
+
   const getStatusColor = (status) => {
     if (status === 'good') return '#10b981'
     if (status === 'needs_work') return '#f59e0b'
     return '#ef4444'
+  }
+
+  const formatDate = (dateString) => {
+    const date = new Date(dateString)
+    return date.toLocaleDateString('en-US', { 
+      year: 'numeric', 
+      month: 'short', 
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    })
   }
 
   return (
@@ -148,9 +195,9 @@ function App() {
       <nav className="navbar">
         <div className="logo">Resume Optimizer</div>
         <div className="nav-links">
-          <a href="#home">Home</a>
+          <a href="#home" onClick={() => setCurrentView('home')}>Home</a>
+          <a href="#history" onClick={() => setCurrentView('history')}>History</a>
           <a href="#features">Features</a>
-          <a href="#signin">Sign In</a>
         </div>
       </nav>
 
@@ -158,7 +205,7 @@ function App() {
         <h1>Optimize Your Resume with AI</h1>
         <p>Get instant feedback and actionable insights to make your resume stand out</p>
         
-        {!analysisResult && (
+        {currentView === 'home' && !analysisResult && (
           <div 
             className={`upload-area ${isDragging ? 'dragging' : ''}`}
             onDragOver={handleDragOver}
@@ -215,17 +262,51 @@ function App() {
           </div>
         )}
 
-        {analysisResult && (
+        {currentView === 'history' && (
+          <div className="history-view">
+            <div className="history-header">
+              <h2>Analysis History</h2>
+              <button className="btn-primary" onClick={() => setCurrentView('home')}>
+                New Analysis
+              </button>
+            </div>
+
+            {isLoadingHistory ? (
+              <div className="loading-container">
+                <div className="spinner"></div>
+                <p>Loading history...</p>
+              </div>
+            ) : analysisHistory.length === 0 ? (
+              <div className="empty-history">
+                <p>No analyses yet. Upload your first resume to get started!</p>
+                <button className="btn-primary" onClick={() => setCurrentView('home')}>
+                  Upload Resume
+                </button>
+              </div>
+            ) : (
+              <div className="history-list">
+                {analysisHistory.map((item) => (
+                  <div key={item.id} className="history-item" onClick={() => viewHistoryAnalysis(item)}>
+                    <div className="history-item-header">
+                      <h3>📄 {item.filename}</h3>
+                      <div className="history-score">{item.overall_score}/100</div>
+                    </div>
+                    <div className="history-item-date">
+                      {formatDate(item.upload_date)}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {(currentView === 'home' || currentView === 'results') && analysisResult && (
           <div className="analysis-results">
             <div className="results-header">
               <h2>Analysis Results</h2>
-              <button className="btn-secondary" onClick={() => {
-                setAnalysisResult(null)
-                setSelectedFile(null)
-                setUploadError('')
-                setUploadSuccess('')
-              }}>
-                Upload New Resume
+              <button className="btn-secondary" onClick={handleStartNewAnalysis}>
+                Start New Analysis
               </button>
             </div>
 
