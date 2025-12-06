@@ -9,6 +9,7 @@ import PyPDF2
 from docx import Document
 import sqlite3
 import json
+import re
 
 # Load environment variables
 load_dotenv()
@@ -31,6 +32,20 @@ app.config['MAX_CONTENT_LENGTH'] = MAX_FILE_SIZE
 
 # Initialize OpenAI client
 openai_client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
+
+# Common technical skills and keywords to look for
+TECH_KEYWORDS = {
+    'languages': ['Python', 'JavaScript', 'Java', 'C++', 'C#', 'Ruby', 'PHP', 'Swift', 'Kotlin', 'TypeScript', 'Go', 'Rust', 'SQL', 'HTML', 'CSS'],
+    'frameworks': ['React', 'Angular', 'Vue', 'Django', 'Flask', 'Spring', 'Node.js', 'Express', 'Laravel', 'Rails', 'ASP.NET', 'jQuery'],
+    'tools': ['Git', 'Docker', 'Kubernetes', 'Jenkins', 'AWS', 'Azure', 'GCP', 'MongoDB', 'PostgreSQL', 'MySQL', 'Redis', 'Elasticsearch'],
+    'concepts': ['Agile', 'Scrum', 'DevOps', 'CI/CD', 'API', 'REST', 'GraphQL', 'Microservices', 'Machine Learning', 'AI', 'Data Analysis']
+}
+
+ACTION_VERBS = [
+    'Led', 'Managed', 'Developed', 'Created', 'Implemented', 'Designed', 'Built', 'Improved', 
+    'Increased', 'Reduced', 'Achieved', 'Delivered', 'Launched', 'Collaborated', 'Coordinated',
+    'Optimized', 'Streamlined', 'Automated', 'Analyzed', 'Established', 'Spearheaded'
+]
 
 def init_database():
     """Initialize SQLite database with analyses table"""
@@ -105,6 +120,37 @@ def get_all_analyses():
     except Exception as e:
         print(f"❌ Error fetching analyses: {e}")
         return []
+
+def extract_keywords(resume_text):
+    """Extract important keywords from resume"""
+    found_keywords = {
+        'technical_skills': [],
+        'action_verbs': [],
+        'total_count': 0
+    }
+    
+    # Extract technical skills
+    for category, keywords in TECH_KEYWORDS.items():
+        for keyword in keywords:
+            # Case insensitive search with word boundaries
+            pattern = r'\b' + re.escape(keyword) + r'\b'
+            if re.search(pattern, resume_text, re.IGNORECASE):
+                found_keywords['technical_skills'].append(keyword)
+    
+    # Extract action verbs
+    for verb in ACTION_VERBS:
+        pattern = r'\b' + re.escape(verb) + r'\b'
+        if re.search(pattern, resume_text, re.IGNORECASE):
+            found_keywords['action_verbs'].append(verb)
+    
+    # Remove duplicates and sort
+    found_keywords['technical_skills'] = sorted(list(set(found_keywords['technical_skills'])))
+    found_keywords['action_verbs'] = sorted(list(set(found_keywords['action_verbs'])))
+    found_keywords['total_count'] = len(found_keywords['technical_skills']) + len(found_keywords['action_verbs'])
+    
+    print(f"✅ Extracted {found_keywords['total_count']} keywords from resume")
+    
+    return found_keywords
 
 def allowed_file(filename):
     """Check if file extension is allowed"""
@@ -252,12 +298,23 @@ def upload_resume():
     if not resume_text or len(resume_text.strip()) < 100:
         return jsonify({"error": "Could not extract enough text from resume. Please ensure the file contains readable text."}), 400
     
+    # Extract keywords
+    keywords = extract_keywords(resume_text)
+    
     # Analyze with AI
     print(f"Analyzing resume with {len(resume_text)} characters...")
     analysis_result = analyze_resume_with_ai(resume_text)
     
     if not analysis_result:
         return jsonify({"error": "AI analysis failed. Please try again."}), 500
+    
+    # Add keywords to analysis result
+    try:
+        analysis_data = json.loads(analysis_result)
+        analysis_data['keywords'] = keywords
+        analysis_result = json.dumps(analysis_data)
+    except:
+        print("Could not add keywords to analysis")
     
     # Save to database
     analysis_id = save_analysis_to_db(filename, analysis_result)

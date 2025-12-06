@@ -489,3 +489,72 @@ body {
   color: #6b7280;
   margin-bottom: 20px;
 }
+
+/* Keywords Card Styles */
+.keywords-card {
+  background: white;
+  padding: 30px;
+  border-radius: 12px;
+  margin-bottom: 30px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.keywords-card h3 {
+  font-size: 24px;
+  color: #1f2937;
+  margin-bottom: 20px;
+}
+
+.keyword-section {
+  margin-bottom: 20px;
+}
+
+.keyword-section h4 {
+  font-size: 16px;
+  color: #6b7280;
+  margin-bottom: 12px;
+  font-weight: 600;
+}
+
+.keyword-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.keyword-tag {
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 500;
+  display: inline-block;
+  transition: all 0.3s ease;
+}
+
+.skill-tag {
+  background: #dbeafe;
+  color: #1e40af;
+  border: 1px solid #93c5fd;
+}
+
+.skill-tag:hover {
+  background: #93c5fd;
+  transform: translateY(-2px);
+}
+
+.verb-tag {
+  background: #d1fae5;
+  color: #065f46;
+  border: 1px solid #a7f3d0;
+}
+
+.verb-tag:hover {
+  background: #a7f3d0;
+  transform: translateY(-2px);
+}
+
+.no-keywords {
+  color: #6b7280;
+  font-style: italic;
+  margin-top: 10px;
+}

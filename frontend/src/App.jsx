@@ -318,6 +318,38 @@ function App() {
               <h3>Overall Score</h3>
             </div>
 
+            {analysisResult.keywords && (
+              <div className="keywords-card">
+                <h3>🔑 Keywords Found ({analysisResult.keywords.total_count})</h3>
+                
+                {analysisResult.keywords.technical_skills && analysisResult.keywords.technical_skills.length > 0 && (
+                  <div className="keyword-section">
+                    <h4>Technical Skills</h4>
+                    <div className="keyword-tags">
+                      {analysisResult.keywords.technical_skills.map((keyword, index) => (
+                        <span key={index} className="keyword-tag skill-tag">{keyword}</span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {analysisResult.keywords.action_verbs && analysisResult.keywords.action_verbs.length > 0 && (
+                  <div className="keyword-section">
+                    <h4>Action Verbs</h4>
+                    <div className="keyword-tags">
+                      {analysisResult.keywords.action_verbs.map((verb, index) => (
+                        <span key={index} className="keyword-tag verb-tag">{verb}</span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {analysisResult.keywords.total_count === 0 && (
+                  <p className="no-keywords">No keywords detected. Consider adding more technical skills and action verbs to your resume.</p>
+                )}
+              </div>
+            )}
+
             <div className="sections-grid">
               {analysisResult.summary && (
                 <div className="section-card" style={{borderLeftColor: getStatusColor(analysisResult.summary.status)}}>
