@@ -148,9 +148,57 @@ def extract_keywords(resume_text):
     found_keywords['action_verbs'] = sorted(list(set(found_keywords['action_verbs'])))
     found_keywords['total_count'] = len(found_keywords['technical_skills']) + len(found_keywords['action_verbs'])
     
-    print(f"✅ Extracted {found_keywords['total_count']} keywords from resume")
-    
     return found_keywords
+
+def extract_all_keywords_from_text(text):
+    """Extract all possible keywords from any text"""
+    all_keywords = []
+    
+    # Extract technical skills
+    for category, keywords in TECH_KEYWORDS.items():
+        for keyword in keywords:
+            pattern = r'\b' + re.escape(keyword) + r'\b'
+            if re.search(pattern, text, re.IGNORECASE):
+                all_keywords.append(keyword)
+    
+    # Remove duplicates and sort
+    return sorted(list(set(all_keywords)))
+
+def compare_resume_to_job(resume_keywords, job_description):
+    """Compare resume keywords against job description"""
+    if not job_description:
+        return None
+    
+    # Extract keywords from job description
+    job_keywords = extract_all_keywords_from_text(job_description)
+    
+    if not job_keywords:
+        return {
+            'match_percentage': 0,
+            'matching_keywords': [],
+            'missing_keywords': [],
+            'job_keywords_count': 0,
+            'resume_keywords_count': len(resume_keywords['technical_skills'])
+        }
+    
+    # Get all resume technical keywords
+    resume_tech_keywords = [k.lower() for k in resume_keywords['technical_skills']]
+    job_keywords_lower = [k.lower() for k in job_keywords]
+    
+    # Find matching and missing keywords
+    matching = [k for k in job_keywords if k.lower() in resume_tech_keywords]
+    missing = [k for k in job_keywords if k.lower() not in resume_tech_keywords]
+    
+    # Calculate match percentage
+    match_percentage = int((len(matching) / len(job_keywords)) * 100) if job_keywords else 0
+    
+    return {
+        'match_percentage': match_percentage,
+        'matching_keywords': sorted(matching),
+        'missing_keywords': sorted(missing),
+        'job_keywords_count': len(job_keywords),
+        'resume_keywords_count': len(resume_tech_keywords)
+    }
 
 def allowed_file(filename):
     """Check if file extension is allowed"""
@@ -179,10 +227,52 @@ def extract_text_from_docx(filepath):
         print(f"Error extracting DOCX text: {e}")
     return text
 
-def analyze_resume_with_ai(resume_text):
+def analyze_resume_with_ai(resume_text, job_description=None):
     """Send resume to OpenAI for analysis"""
     
-    prompt = f"""You are an expert resume reviewer and career coach. Analyze the following resume and provide detailed feedback.
+    if job_description:
+        prompt = f"""You are an expert resume reviewer and career coach. Analyze the following resume against this job description and provide detailed feedback.
+
+Job Description:
+{job_description}
+
+Resume:
+{resume_text}
+
+Please provide:
+1. An overall score from 0-100 based on how well the resume matches the job
+2. Analysis of each major section (Summary, Experience, Skills, Education)
+3. Specific suggestions for improvement to better match the job requirements
+4. ATS compatibility assessment
+
+Format your response as JSON with this structure:
+{{
+    "overall_score": <number 0-100>,
+    "summary": {{
+        "score": <number 0-100>,
+        "status": "good/needs_work/critical",
+        "feedback": "<detailed feedback>"
+    }},
+    "experience": {{
+        "score": <number 0-100>,
+        "status": "good/needs_work/critical",
+        "feedback": "<detailed feedback>"
+    }},
+    "skills": {{
+        "score": <number 0-100>,
+        "status": "good/needs_work/critical",
+        "feedback": "<detailed feedback>"
+    }},
+    "education": {{
+        "score": <number 0-100>,
+        "status": "good/needs_work/critical",
+        "feedback": "<detailed feedback>"
+    }},
+    "ats_score": <number 0-100>,
+    "key_improvements": ["improvement 1", "improvement 2", "improvement 3"]
+}}"""
+    else:
+        prompt = f"""You are an expert resume reviewer and career coach. Analyze the following resume and provide detailed feedback.
 
 Resume:
 {resume_text}
@@ -275,6 +365,9 @@ def upload_resume():
     if not allowed_file(file.filename):
         return jsonify({"error": "Only PDF and DOCX files are allowed"}), 400
     
+    # Get job description if provided
+    job_description = request.form.get('job_description', '').strip()
+    
     # Secure the filename
     filename = secure_filename(file.filename)
     
@@ -300,18 +393,27 @@ def upload_resume():
     
     # Extract keywords
     keywords = extract_keywords(resume_text)
+    print(f"✅ Extracted {keywords['total_count']} keywords from resume")
+    
+    # Compare to job description if provided
+    job_match = None
+    if job_description:
+        job_match = compare_resume_to_job(keywords, job_description)
+        print(f"✅ Job match: {job_match['match_percentage']}%")
     
     # Analyze with AI
     print(f"Analyzing resume with {len(resume_text)} characters...")
-    analysis_result = analyze_resume_with_ai(resume_text)
+    analysis_result = analyze_resume_with_ai(resume_text, job_description)
     
     if not analysis_result:
         return jsonify({"error": "AI analysis failed. Please try again."}), 500
     
-    # Add keywords to analysis result
+    # Add keywords and job match to analysis result
     try:
         analysis_data = json.loads(analysis_result)
         analysis_data['keywords'] = keywords
+        if job_match:
+            analysis_data['job_match'] = job_match
         analysis_result = json.dumps(analysis_data)
     except:
         print("Could not add keywords to analysis")

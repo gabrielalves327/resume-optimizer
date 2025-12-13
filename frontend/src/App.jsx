@@ -5,6 +5,7 @@ function App() {
   const [apiStatus, setApiStatus] = useState('checking...')
   const [apiMessage, setApiMessage] = useState('')
   const [selectedFile, setSelectedFile] = useState(null)
+  const [jobDescription, setJobDescription] = useState('')
   const [uploadError, setUploadError] = useState('')
   const [uploadSuccess, setUploadSuccess] = useState('')
   const [isDragging, setIsDragging] = useState(false)
@@ -119,6 +120,9 @@ function App() {
 
     const formData = new FormData()
     formData.append('file', selectedFile)
+    if (jobDescription.trim()) {
+      formData.append('job_description', jobDescription.trim())
+    }
 
     try {
       console.log('Sending file to backend for AI analysis...')
@@ -163,6 +167,7 @@ function App() {
   const handleStartNewAnalysis = () => {
     setAnalysisResult(null)
     setSelectedFile(null)
+    setJobDescription('')
     setUploadError('')
     setUploadSuccess('')
     setCurrentView('home')
@@ -206,46 +211,61 @@ function App() {
         <p>Get instant feedback and actionable insights to make your resume stand out</p>
         
         {currentView === 'home' && !analysisResult && (
-          <div 
-            className={`upload-area ${isDragging ? 'dragging' : ''}`}
-            onDragOver={handleDragOver}
-            onDragLeave={handleDragLeave}
-            onDrop={handleDrop}
-          >
-            <div className="upload-icon">📄</div>
-            <h3>Drop your resume here</h3>
-            <p>Supports PDF, DOCX - Max 5MB</p>
-            
-            <input 
-              type="file" 
-              id="file-input" 
-              accept=".pdf,.docx"
-              onChange={handleFileSelect}
-              style={{ display: 'none' }}
-              disabled={isUploading}
-            />
-            
-            <label htmlFor="file-input" className={`btn-primary ${isUploading ? 'disabled' : ''}`}>
-              Choose File
-            </label>
+          <div className="upload-container">
+            <div 
+              className={`upload-area ${isDragging ? 'dragging' : ''}`}
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+            >
+              <div className="upload-icon">📄</div>
+              <h3>Drop your resume here</h3>
+              <p>Supports PDF, DOCX - Max 5MB</p>
+              
+              <input 
+                type="file" 
+                id="file-input" 
+                accept=".pdf,.docx"
+                onChange={handleFileSelect}
+                style={{ display: 'none' }}
+                disabled={isUploading}
+              />
+              
+              <label htmlFor="file-input" className={`btn-primary ${isUploading ? 'disabled' : ''}`}>
+                Choose File
+              </label>
 
-            {uploadError && (
-              <div className="error-message">
-                {uploadError}
-                <button className="btn-retry" onClick={handleRetry}>
-                  Try Again
-                </button>
-              </div>
-            )}
+              {uploadError && (
+                <div className="error-message">
+                  {uploadError}
+                  <button className="btn-retry" onClick={handleRetry}>
+                    Try Again
+                  </button>
+                </div>
+              )}
 
-            {uploadSuccess && !isUploading && (
-              <div className="success-message">
-                {uploadSuccess}
-              </div>
-            )}
+              {uploadSuccess && !isUploading && (
+                <div className="success-message">
+                  {uploadSuccess}
+                </div>
+              )}
+            </div>
+
+            <div className="job-description-area">
+              <h3>📋 Job Description (Optional)</h3>
+              <p>Paste the job description to get tailored feedback and see how well your resume matches</p>
+              <textarea
+                className="job-description-input"
+                placeholder="Paste the job description here to compare your resume against specific requirements..."
+                value={jobDescription}
+                onChange={(e) => setJobDescription(e.target.value)}
+                disabled={isUploading}
+                rows={8}
+              />
+            </div>
 
             {selectedFile && !isUploading && !uploadError && (
-              <button className="btn-upload" onClick={handleUpload}>
+              <button className="btn-upload-large" onClick={handleUpload}>
                 Upload & Analyze with AI
               </button>
             )}
@@ -317,6 +337,80 @@ function App() {
               </div>
               <h3>Overall Score</h3>
             </div>
+
+            {analysisResult.job_match && (
+              <div className="job-match-card">
+                <h3>🎯 Job Match Analysis</h3>
+                <div className="match-percentage">
+                  <div className="match-circle">
+                    <div className="match-number">{analysisResult.job_match.match_percentage}%</div>
+                  </div>
+                  <p>Match Rate</p>
+                </div>
+                
+                <div className="match-details">
+                  <div className="match-stat">
+                    <span className="stat-label">Job Requirements:</span>
+                    <span className="stat-value">{analysisResult.job_match.job_keywords_count} keywords</span>
+                  </div>
+                  <div className="match-stat">
+                    <span className="stat-label">Your Resume:</span>
+                    <span className="stat-value">{analysisResult.job_match.resume_keywords_count} keywords</span>
+                  </div>
+                </div>
+
+                {analysisResult.job_match.matching_keywords && analysisResult.job_match.matching_keywords.length > 0 && (
+                  <div className="keyword-match-section">
+                    <h4>✅ Matching Keywords ({analysisResult.job_match.matching_keywords.length})</h4>
+                    <div className="keyword-tags">
+                      {analysisResult.job_match.matching_keywords.map((keyword, index) => (
+                        <span key={index} className="keyword-tag matching-tag">{keyword}</span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {analysisResult.job_match.missing_keywords && analysisResult.job_match.missing_keywords.length > 0 && (
+                  <div className="keyword-match-section">
+                    <h4>❌ Missing Keywords ({analysisResult.job_match.missing_keywords.length})</h4>
+                    <div className="keyword-tags">
+                      {analysisResult.job_match.missing_keywords.map((keyword, index) => (
+                        <span key={index} className="keyword-tag missing-tag">{keyword}</span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {analysisResult.job_match && analysisResult.job_match.missing_keywords && analysisResult.job_match.missing_keywords.length > 0 && (
+              <div className="job-recommendations-card">
+                <h3>💡 How to Improve Your Match</h3>
+                <p className="recommendations-intro">
+                  Your resume is missing {analysisResult.job_match.missing_keywords.length} keywords that appear in the job description. 
+                  Here's how to improve your match rate:
+                </p>
+                <ul className="recommendations-list">
+                  <li>
+                    <strong>Add missing skills:</strong> If you have experience with {analysisResult.job_match.missing_keywords.slice(0, 3).join(', ')}, 
+                    make sure to include them in your Skills section.
+                  </li>
+                  <li>
+                    <strong>Update your experience:</strong> Mention specific projects or tasks where you used these technologies.
+                  </li>
+                  <li>
+                    <strong>Match the language:</strong> Use the exact keywords from the job description. 
+                    If they say "JavaScript" don't just write "JS".
+                  </li>
+                  <li>
+                    <strong>Prioritize critical skills:</strong> Focus on adding the most important missing keywords: 
+                    {analysisResult.job_match.missing_keywords.slice(0, 5).map((kw, i) => (
+                      <span key={i} className="inline-keyword"> {kw}</span>
+                    ))}
+                  </li>
+                </ul>
+              </div>
+            )}
 
             {analysisResult.keywords && (
               <div className="keywords-card">
