@@ -200,310 +200,376 @@ function App() {
       <nav className="navbar">
         <div className="logo">Resume Optimizer</div>
         <div className="nav-links">
-          <a href="#home" onClick={() => setCurrentView('home')}>Home</a>
-          <a href="#history" onClick={() => setCurrentView('history')}>History</a>
-          <a href="#features">Features</a>
+          <a onClick={() => { setCurrentView('home'); setAnalysisResult(null); }}>Home</a>
+          <a onClick={() => setCurrentView('history')}>History</a>
+          <a onClick={() => setCurrentView('features')}>Features</a>
         </div>
       </nav>
 
-      <div className="hero">
-        <h1>Optimize Your Resume with AI</h1>
-        <p>Get instant feedback and actionable insights to make your resume stand out</p>
-        
-        {currentView === 'home' && !analysisResult && (
-          <div className="upload-container">
-            <div 
-              className={`upload-area ${isDragging ? 'dragging' : ''}`}
-              onDragOver={handleDragOver}
-              onDragLeave={handleDragLeave}
-              onDrop={handleDrop}
-            >
-              <div className="upload-icon">📄</div>
-              <h3>Drop your resume here</h3>
-              <p>Supports PDF, DOCX - Max 5MB</p>
-              
-              <input 
-                type="file" 
-                id="file-input" 
-                accept=".pdf,.docx"
-                onChange={handleFileSelect}
-                style={{ display: 'none' }}
-                disabled={isUploading}
-              />
-              
-              <label htmlFor="file-input" className={`btn-primary ${isUploading ? 'disabled' : ''}`}>
-                Choose File
-              </label>
+      {/* HOME PAGE */}
+      {currentView === 'home' && !analysisResult && (
+        <div className="hero">
+          <h1>Optimize Your Resume with AI</h1>
+          <p>Get instant feedback and actionable insights to make your resume stand out</p>
+          
+          <div 
+            className={`upload-area ${isDragging ? 'dragging' : ''}`}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+          >
+            <div className="upload-icon">📄</div>
+            <h3>Drop your resume here</h3>
+            <p>Supports PDF, DOCX - Max 5MB</p>
+            
+            <input 
+              type="file" 
+              id="file-input" 
+              accept=".pdf,.docx"
+              onChange={handleFileSelect}
+              style={{ display: 'none' }}
+              disabled={isUploading}
+            />
+            
+            <label htmlFor="file-input" className={`btn-primary ${isUploading ? 'disabled' : ''}`}>
+              Choose File
+            </label>
 
-              {uploadError && (
-                <div className="error-message">
-                  {uploadError}
-                  <button className="btn-retry" onClick={handleRetry}>
-                    Try Again
-                  </button>
-                </div>
-              )}
-
-              {uploadSuccess && !isUploading && (
-                <div className="success-message">
-                  {uploadSuccess}
-                </div>
-              )}
-            </div>
-
-            <div className="job-description-area">
-              <h3>📋 Job Description (Optional)</h3>
-              <p>Paste the job description to get tailored feedback and see how well your resume matches</p>
-              <textarea
-                className="job-description-input"
-                placeholder="Paste the job description here to compare your resume against specific requirements..."
-                value={jobDescription}
-                onChange={(e) => setJobDescription(e.target.value)}
-                disabled={isUploading}
-                rows={8}
-              />
-            </div>
-
-            {selectedFile && !isUploading && !uploadError && (
-              <button className="btn-upload-large" onClick={handleUpload}>
-                Upload & Analyze with AI
-              </button>
-            )}
-
-            {isUploading && (
-              <div className="loading-container">
-                <div className="spinner"></div>
-                <div className="loading-message">
-                  <strong>⏳ Analyzing your resume with AI...</strong>
-                  <p>This may take 10-15 seconds. Please wait.</p>
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {currentView === 'history' && (
-          <div className="history-view">
-            <div className="history-header">
-              <h2>Analysis History</h2>
-              <button className="btn-primary" onClick={() => setCurrentView('home')}>
-                New Analysis
-              </button>
-            </div>
-
-            {isLoadingHistory ? (
-              <div className="loading-container">
-                <div className="spinner"></div>
-                <p>Loading history...</p>
-              </div>
-            ) : analysisHistory.length === 0 ? (
-              <div className="empty-history">
-                <p>No analyses yet. Upload your first resume to get started!</p>
-                <button className="btn-primary" onClick={() => setCurrentView('home')}>
-                  Upload Resume
+            {uploadError && (
+              <div className="error-message">
+                {uploadError}
+                <button className="btn-retry" onClick={handleRetry}>
+                  Try Again
                 </button>
               </div>
-            ) : (
-              <div className="history-list">
-                {analysisHistory.map((item) => (
-                  <div key={item.id} className="history-item" onClick={() => viewHistoryAnalysis(item)}>
-                    <div className="history-item-header">
-                      <h3>📄 {item.filename}</h3>
-                      <div className="history-score">{item.overall_score}/100</div>
-                    </div>
-                    <div className="history-item-date">
-                      {formatDate(item.upload_date)}
-                    </div>
-                  </div>
-                ))}
+            )}
+
+            {uploadSuccess && !isUploading && (
+              <div className="success-message">
+                {uploadSuccess}
               </div>
             )}
           </div>
-        )}
 
-        {(currentView === 'home' || currentView === 'results') && analysisResult && (
-          <div className="analysis-results">
-            <div className="results-header">
-              <h2>Analysis Results</h2>
-              <button className="btn-secondary" onClick={handleStartNewAnalysis}>
-                Start New Analysis
+          <div className="job-description-area">
+            <h3>📋 Job Description (Optional)</h3>
+            <p>Paste the job description to get tailored feedback and see how well your resume matches</p>
+            <textarea
+              className="job-description-input"
+              placeholder="Paste the job description here to compare your resume against specific requirements..."
+              value={jobDescription}
+              onChange={(e) => setJobDescription(e.target.value)}
+              disabled={isUploading}
+              rows={8}
+            />
+          </div>
+
+          {selectedFile && !isUploading && !uploadError && (
+            <button className="btn-upload-large" onClick={handleUpload}>
+              Upload & Analyze with AI
+            </button>
+          )}
+
+          {isUploading && (
+            <div className="loading-container">
+              <div className="spinner"></div>
+              <div className="loading-message">
+                <strong>⏳ Analyzing your resume with AI...</strong>
+                <p>This may take 10-15 seconds. Please wait.</p>
+              </div>
+            </div>
+          )}
+
+          <div className="features-list">
+            <span>✓ ATS-friendly analysis</span>
+            <span>✓ Instant results</span>
+            <span>✓ Secure & private</span>
+          </div>
+        </div>
+      )}
+
+      {/* FEATURES PAGE */}
+      {currentView === 'features' && (
+        <div className="features-page">
+          <h1>Features</h1>
+          <p>Powerful tools to help you land your dream job</p>
+
+          <div className="features-grid">
+            <div className="feature-card">
+              <div className="feature-icon">🤖</div>
+              <h3>AI-Powered Analysis</h3>
+              <p>Get instant feedback on your resume using advanced GPT-3.5 AI technology that understands what recruiters look for.</p>
+            </div>
+
+            <div className="feature-card">
+              <div className="feature-icon">🎯</div>
+              <h3>Job Description Matching</h3>
+              <p>Compare your resume against specific job postings to see exactly which keywords you're missing and how to improve your match rate.</p>
+            </div>
+
+            <div className="feature-card">
+              <div className="feature-icon">🔑</div>
+              <h3>Keyword Extraction</h3>
+              <p>Automatically identifies technical skills and action verbs in your resume to ensure you're using the right terminology.</p>
+            </div>
+
+            <div className="feature-card">
+              <div className="feature-icon">📊</div>
+              <h3>Section-by-Section Scoring</h3>
+              <p>Detailed analysis of your professional summary, experience, skills, and education with actionable improvement suggestions.</p>
+            </div>
+
+            <div className="feature-card">
+              <div className="feature-icon">✅</div>
+              <h3>ATS Compatibility</h3>
+              <p>Check if your resume will pass Applicant Tracking Systems that filter 75% of resumes before they reach human recruiters.</p>
+            </div>
+
+            <div className="feature-card">
+              <div className="feature-icon">📝</div>
+              <h3>Analysis History</h3>
+              <p>Track your progress over time by saving all your resume analyses and comparing improvements across versions.</p>
+            </div>
+          </div>
+
+          <div className="cta-section">
+            <h2>Ready to optimize your resume?</h2>
+            <button className="btn-primary" onClick={() => setCurrentView('home')}>
+              Get Started Now
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* HISTORY PAGE */}
+      {currentView === 'history' && (
+        <div className="history-view">
+          <h1>Optimize Your Resume with AI</h1>
+          <p>Get instant feedback and actionable insights to make your resume stand out</p>
+          
+          <div className="history-header">
+            <h2>Analysis History</h2>
+            <button className="btn-primary" onClick={() => setCurrentView('home')}>
+              New Analysis
+            </button>
+          </div>
+
+          {isLoadingHistory ? (
+            <div className="loading-container">
+              <div className="spinner"></div>
+              <p>Loading history...</p>
+            </div>
+          ) : analysisHistory.length === 0 ? (
+            <div className="empty-history">
+              <p>No analyses yet. Upload your first resume to get started!</p>
+              <button className="btn-primary" onClick={() => setCurrentView('home')}>
+                Upload Resume
               </button>
             </div>
-
-            <div className="score-card">
-              <div className="score-circle">
-                <div className="score-number">{analysisResult.overall_score}</div>
-                <div className="score-label">/ 100</div>
-              </div>
-              <h3>Overall Score</h3>
+          ) : (
+            <div className="history-list">
+              {analysisHistory.map((item) => (
+                <div key={item.id} className="history-item" onClick={() => viewHistoryAnalysis(item)}>
+                  <div className="history-item-header">
+                    <h3>📄 {item.filename}</h3>
+                    <div className="history-score">{item.overall_score}/100</div>
+                  </div>
+                  <div className="history-item-date">
+                    {formatDate(item.upload_date)}
+                  </div>
+                </div>
+              ))}
             </div>
+          )}
+        </div>
+      )}
 
-            {analysisResult.job_match && (
-              <div className="job-match-card">
-                <h3>🎯 Job Match Analysis</h3>
-                <div className="match-percentage">
-                  <div className="match-circle">
-                    <div className="match-number">{analysisResult.job_match.match_percentage}%</div>
-                  </div>
-                  <p>Match Rate</p>
+      {/* RESULTS PAGE */}
+      {analysisResult && (
+        <div className="analysis-results">
+          <h1>Optimize Your Resume with AI</h1>
+          <p>Get instant feedback and actionable insights to make your resume stand out</p>
+          
+          <div className="results-header">
+            <h2>Analysis Results</h2>
+            <button className="btn-secondary" onClick={handleStartNewAnalysis}>
+              Start New Analysis
+            </button>
+          </div>
+
+          <div className="score-card">
+            <div className="score-circle">
+              <div className="score-number">{analysisResult.overall_score}</div>
+              <div className="score-label">/ 100</div>
+            </div>
+            <h3>Overall Score</h3>
+          </div>
+
+          {analysisResult.job_match && (
+            <div className="job-match-card">
+              <h3>🎯 Job Match Analysis</h3>
+              <div className="match-percentage">
+                <div className="match-circle">
+                  <div className="match-number">{analysisResult.job_match.match_percentage}%</div>
                 </div>
-                
-                <div className="match-details">
-                  <div className="match-stat">
-                    <span className="stat-label">Job Requirements:</span>
-                    <span className="stat-value">{analysisResult.job_match.job_keywords_count} keywords</span>
-                  </div>
-                  <div className="match-stat">
-                    <span className="stat-label">Your Resume:</span>
-                    <span className="stat-value">{analysisResult.job_match.resume_keywords_count} keywords</span>
-                  </div>
-                </div>
-
-                {analysisResult.job_match.matching_keywords && analysisResult.job_match.matching_keywords.length > 0 && (
-                  <div className="keyword-match-section">
-                    <h4>✅ Matching Keywords ({analysisResult.job_match.matching_keywords.length})</h4>
-                    <div className="keyword-tags">
-                      {analysisResult.job_match.matching_keywords.map((keyword, index) => (
-                        <span key={index} className="keyword-tag matching-tag">{keyword}</span>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {analysisResult.job_match.missing_keywords && analysisResult.job_match.missing_keywords.length > 0 && (
-                  <div className="keyword-match-section">
-                    <h4>❌ Missing Keywords ({analysisResult.job_match.missing_keywords.length})</h4>
-                    <div className="keyword-tags">
-                      {analysisResult.job_match.missing_keywords.map((keyword, index) => (
-                        <span key={index} className="keyword-tag missing-tag">{keyword}</span>
-                      ))}
-                    </div>
-                  </div>
-                )}
+                <p>Match Rate</p>
               </div>
-            )}
+              
+              <div className="match-details">
+                <div className="match-stat">
+                  <span className="stat-label">Job Requirements:</span>
+                  <span className="stat-value">{analysisResult.job_match.job_keywords_count} keywords</span>
+                </div>
+                <div className="match-stat">
+                  <span className="stat-label">Your Resume:</span>
+                  <span className="stat-value">{analysisResult.job_match.resume_keywords_count} keywords</span>
+                </div>
+              </div>
 
-            {analysisResult.job_match && analysisResult.job_match.missing_keywords && analysisResult.job_match.missing_keywords.length > 0 && (
-              <div className="job-recommendations-card">
-                <h3>💡 How to Improve Your Match</h3>
-                <p className="recommendations-intro">
-                  Your resume is missing {analysisResult.job_match.missing_keywords.length} keywords that appear in the job description. 
-                  Here's how to improve your match rate:
-                </p>
-                <ul className="recommendations-list">
-                  <li>
-                    <strong>Add missing skills:</strong> If you have experience with {analysisResult.job_match.missing_keywords.slice(0, 3).join(', ')}, 
-                    make sure to include them in your Skills section.
-                  </li>
-                  <li>
-                    <strong>Update your experience:</strong> Mention specific projects or tasks where you used these technologies.
-                  </li>
-                  <li>
-                    <strong>Match the language:</strong> Use the exact keywords from the job description. 
-                    If they say "JavaScript" don't just write "JS".
-                  </li>
-                  <li>
-                    <strong>Prioritize critical skills:</strong> Focus on adding the most important missing keywords: 
-                    {analysisResult.job_match.missing_keywords.slice(0, 5).map((kw, i) => (
-                      <span key={i} className="inline-keyword"> {kw}</span>
+              {analysisResult.job_match.matching_keywords && analysisResult.job_match.matching_keywords.length > 0 && (
+                <div className="keyword-match-section">
+                  <h4>✅ Matching Keywords ({analysisResult.job_match.matching_keywords.length})</h4>
+                  <div className="keyword-tags">
+                    {analysisResult.job_match.matching_keywords.map((keyword, index) => (
+                      <span key={index} className="keyword-tag matching-tag">{keyword}</span>
                     ))}
-                  </li>
-                </ul>
-              </div>
-            )}
-
-            {analysisResult.keywords && (
-              <div className="keywords-card">
-                <h3>🔑 Keywords Found ({analysisResult.keywords.total_count})</h3>
-                
-                {analysisResult.keywords.technical_skills && analysisResult.keywords.technical_skills.length > 0 && (
-                  <div className="keyword-section">
-                    <h4>Technical Skills</h4>
-                    <div className="keyword-tags">
-                      {analysisResult.keywords.technical_skills.map((keyword, index) => (
-                        <span key={index} className="keyword-tag skill-tag">{keyword}</span>
-                      ))}
-                    </div>
                   </div>
-                )}
+                </div>
+              )}
 
-                {analysisResult.keywords.action_verbs && analysisResult.keywords.action_verbs.length > 0 && (
-                  <div className="keyword-section">
-                    <h4>Action Verbs</h4>
-                    <div className="keyword-tags">
-                      {analysisResult.keywords.action_verbs.map((verb, index) => (
-                        <span key={index} className="keyword-tag verb-tag">{verb}</span>
-                      ))}
-                    </div>
+              {analysisResult.job_match.missing_keywords && analysisResult.job_match.missing_keywords.length > 0 && (
+                <div className="keyword-match-section">
+                  <h4>❌ Missing Keywords ({analysisResult.job_match.missing_keywords.length})</h4>
+                  <div className="keyword-tags">
+                    {analysisResult.job_match.missing_keywords.map((keyword, index) => (
+                      <span key={index} className="keyword-tag missing-tag">{keyword}</span>
+                    ))}
                   </div>
-                )}
-
-                {analysisResult.keywords.total_count === 0 && (
-                  <p className="no-keywords">No keywords detected. Consider adding more technical skills and action verbs to your resume.</p>
-                )}
-              </div>
-            )}
-
-            <div className="sections-grid">
-              {analysisResult.summary && (
-                <div className="section-card" style={{borderLeftColor: getStatusColor(analysisResult.summary.status)}}>
-                  <h3>📝 Professional Summary</h3>
-                  <div className="section-score">Score: {analysisResult.summary.score}/100</div>
-                  <p>{analysisResult.summary.feedback}</p>
-                </div>
-              )}
-
-              {analysisResult.experience && (
-                <div className="section-card" style={{borderLeftColor: getStatusColor(analysisResult.experience.status)}}>
-                  <h3>💼 Work Experience</h3>
-                  <div className="section-score">Score: {analysisResult.experience.score}/100</div>
-                  <p>{analysisResult.experience.feedback}</p>
-                </div>
-              )}
-
-              {analysisResult.skills && (
-                <div className="section-card" style={{borderLeftColor: getStatusColor(analysisResult.skills.status)}}>
-                  <h3>⚡ Skills</h3>
-                  <div className="section-score">Score: {analysisResult.skills.score}/100</div>
-                  <p>{analysisResult.skills.feedback}</p>
-                </div>
-              )}
-
-              {analysisResult.education && (
-                <div className="section-card" style={{borderLeftColor: getStatusColor(analysisResult.education.status)}}>
-                  <h3>🎓 Education</h3>
-                  <div className="section-score">Score: {analysisResult.education.score}/100</div>
-                  <p>{analysisResult.education.feedback}</p>
                 </div>
               )}
             </div>
+          )}
 
-            {analysisResult.ats_score && (
-              <div className="ats-card">
-                <h3>🤖 ATS Compatibility Score</h3>
-                <div className="ats-score">{analysisResult.ats_score}/100</div>
+          {analysisResult.job_match && analysisResult.job_match.missing_keywords && analysisResult.job_match.missing_keywords.length > 0 && (
+            <div className="job-recommendations-card">
+              <h3>💡 How to Improve Your Match</h3>
+              <p className="recommendations-intro">
+                Your resume is missing {analysisResult.job_match.missing_keywords.length} keywords that appear in the job description. 
+                Here's how to improve your match rate:
+              </p>
+              <ul className="recommendations-list">
+                <li>
+                  <strong>Add missing skills:</strong> If you have experience with {analysisResult.job_match.missing_keywords.slice(0, 3).join(', ')}, 
+                  make sure to include them in your Skills section.
+                </li>
+                <li>
+                  <strong>Update your experience:</strong> Mention specific projects or tasks where you used these technologies.
+                </li>
+                <li>
+                  <strong>Match the language:</strong> Use the exact keywords from the job description. 
+                  If they say "JavaScript" don't just write "JS".
+                </li>
+                <li>
+                  <strong>Prioritize critical skills:</strong> Focus on adding the most important missing keywords: 
+                  {analysisResult.job_match.missing_keywords.slice(0, 5).map((kw, i) => (
+                    <span key={i} className="inline-keyword"> {kw}</span>
+                  ))}
+                </li>
+              </ul>
+            </div>
+          )}
+
+          {analysisResult.keywords && (
+            <div className="keywords-card">
+              <h3>🔑 Keywords Found ({analysisResult.keywords.total_count})</h3>
+              
+              {analysisResult.keywords.technical_skills && analysisResult.keywords.technical_skills.length > 0 && (
+                <div className="keyword-section">
+                  <h4>Technical Skills</h4>
+                  <div className="keyword-tags">
+                    {analysisResult.keywords.technical_skills.map((keyword, index) => (
+                      <span key={index} className="keyword-tag skill-tag">{keyword}</span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {analysisResult.keywords.action_verbs && analysisResult.keywords.action_verbs.length > 0 && (
+                <div className="keyword-section">
+                  <h4>Action Verbs</h4>
+                  <div className="keyword-tags">
+                    {analysisResult.keywords.action_verbs.map((verb, index) => (
+                      <span key={index} className="keyword-tag verb-tag">{verb}</span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {analysisResult.keywords.total_count === 0 && (
+                <p className="no-keywords">No keywords detected. Consider adding more technical skills and action verbs to your resume.</p>
+              )}
+            </div>
+          )}
+
+          <div className="sections-grid">
+            {analysisResult.summary && (
+              <div className="section-card" style={{borderLeftColor: getStatusColor(analysisResult.summary.status)}}>
+                <h3>📝 Professional Summary</h3>
+                <div className="section-score">Score: {analysisResult.summary.score}/100</div>
+                <p>{analysisResult.summary.feedback}</p>
               </div>
             )}
 
-            {analysisResult.key_improvements && (
-              <div className="improvements-card">
-                <h3>💡 Key Improvements</h3>
-                <ul>
-                  {analysisResult.key_improvements.map((improvement, index) => (
-                    <li key={index}>{improvement}</li>
-                  ))}
-                </ul>
+            {analysisResult.experience && (
+              <div className="section-card" style={{borderLeftColor: getStatusColor(analysisResult.experience.status)}}>
+                <h3>💼 Work Experience</h3>
+                <div className="section-score">Score: {analysisResult.experience.score}/100</div>
+                <p>{analysisResult.experience.feedback}</p>
+              </div>
+            )}
+
+            {analysisResult.skills && (
+              <div className="section-card" style={{borderLeftColor: getStatusColor(analysisResult.skills.status)}}>
+                <h3>⚡ Skills</h3>
+                <div className="section-score">Score: {analysisResult.skills.score}/100</div>
+                <p>{analysisResult.skills.feedback}</p>
+              </div>
+            )}
+
+            {analysisResult.education && (
+              <div className="section-card" style={{borderLeftColor: getStatusColor(analysisResult.education.status)}}>
+                <h3>🎓 Education</h3>
+                <div className="section-score">Score: {analysisResult.education.score}/100</div>
+                <p>{analysisResult.education.feedback}</p>
               </div>
             )}
           </div>
-        )}
 
-        <div className="features-list">
-          <span>✓ ATS-friendly analysis</span>
-          <span>✓ Instant results</span>
-          <span>✓ Secure & private</span>
+          {analysisResult.ats_score && (
+            <div className="ats-card">
+              <h3>🤖 ATS Compatibility Score</h3>
+              <div className="ats-score">{analysisResult.ats_score}/100</div>
+            </div>
+          )}
+
+          {analysisResult.key_improvements && (
+            <div className="improvements-card">
+              <h3>💡 Key Improvements</h3>
+              <ul>
+                {analysisResult.key_improvements.map((improvement, index) => (
+                  <li key={index}>{improvement}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          <div className="features-list">
+            <span>✓ ATS-friendly analysis</span>
+            <span>✓ Instant results</span>
+            <span>✓ Secure & private</span>
+          </div>
         </div>
-      </div>
+      )}
 
       <div className="api-status">
         <h3>Backend API Status</h3>
