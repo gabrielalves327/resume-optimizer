@@ -15,6 +15,31 @@ function App() {
   const [analysisHistory, setAnalysisHistory] = useState([])
   const [isLoadingHistory, setIsLoadingHistory] = useState(false)
 
+  // Resume builder state
+  const [resumeData, setResumeData] = useState({
+    personalInfo: {
+      name: '',
+      email: '',
+      phone: '',
+      location: '',
+      linkedin: '',
+      website: ''
+    },
+    summary: '',
+    experience: [
+      { company: '', position: '', location: '', startDate: '', endDate: '', description: '' }
+    ],
+    education: [
+      { school: '', degree: '', field: '', location: '', graduationDate: '', gpa: '' }
+    ],
+    skills: {
+      technical: '',
+      soft: '',
+      languages: '',
+      certifications: ''
+    }
+  })
+
   useEffect(() => {
     // Test API connection on load
     fetch('http://localhost:5000/')
@@ -195,12 +220,119 @@ function App() {
     })
   }
 
+  // Resume Builder Functions
+  const updatePersonalInfo = (field, value) => {
+    setResumeData(prev => ({
+      ...prev,
+      personalInfo: { ...prev.personalInfo, [field]: value }
+    }))
+  }
+
+  const updateSummary = (value) => {
+    setResumeData(prev => ({ ...prev, summary: value }))
+  }
+
+  const addExperience = () => {
+    setResumeData(prev => ({
+      ...prev,
+      experience: [...prev.experience, { company: '', position: '', location: '', startDate: '', endDate: '', description: '' }]
+    }))
+  }
+
+  const updateExperience = (index, field, value) => {
+    setResumeData(prev => {
+      const newExperience = [...prev.experience]
+      newExperience[index][field] = value
+      return { ...prev, experience: newExperience }
+    })
+  }
+
+  const removeExperience = (index) => {
+    setResumeData(prev => ({
+      ...prev,
+      experience: prev.experience.filter((_, i) => i !== index)
+    }))
+  }
+
+  const addEducation = () => {
+    setResumeData(prev => ({
+      ...prev,
+      education: [...prev.education, { school: '', degree: '', field: '', location: '', graduationDate: '', gpa: '' }]
+    }))
+  }
+
+  const updateEducation = (index, field, value) => {
+    setResumeData(prev => {
+      const newEducation = [...prev.education]
+      newEducation[index][field] = value
+      return { ...prev, education: newEducation }
+    })
+  }
+
+  const removeEducation = (index) => {
+    setResumeData(prev => ({
+      ...prev,
+      education: prev.education.filter((_, i) => i !== index)
+    }))
+  }
+
+  const updateSkills = (field, value) => {
+    setResumeData(prev => ({
+      ...prev,
+      skills: { ...prev.skills, [field]: value }
+    }))
+  }
+
+  const generateResumePreview = () => {
+    return `
+${resumeData.personalInfo.name}
+${resumeData.personalInfo.email} | ${resumeData.personalInfo.phone} | ${resumeData.personalInfo.location}
+${resumeData.personalInfo.linkedin ? `LinkedIn: ${resumeData.personalInfo.linkedin}` : ''}
+${resumeData.personalInfo.website ? `Website: ${resumeData.personalInfo.website}` : ''}
+
+PROFESSIONAL SUMMARY
+${resumeData.summary}
+
+EXPERIENCE
+${resumeData.experience.map(exp => `
+${exp.position} - ${exp.company}
+${exp.location} | ${exp.startDate} - ${exp.endDate || 'Present'}
+${exp.description}
+`).join('\n')}
+
+EDUCATION
+${resumeData.education.map(edu => `
+${edu.degree} in ${edu.field} - ${edu.school}
+${edu.location} | Graduated: ${edu.graduationDate}
+${edu.gpa ? `GPA: ${edu.gpa}` : ''}
+`).join('\n')}
+
+SKILLS
+Technical Skills: ${resumeData.skills.technical}
+Soft Skills: ${resumeData.skills.soft}
+Languages: ${resumeData.skills.languages}
+Certifications: ${resumeData.skills.certifications}
+    `.trim()
+  }
+
+  const downloadResumeAsText = () => {
+    const resumeText = generateResumePreview()
+    const blob = new Blob([resumeText], { type: 'text/plain' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `${resumeData.personalInfo.name.replace(/\s+/g, '_')}_Resume.txt`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
   return (
     <div className="App">
       <nav className="navbar">
         <div className="logo">Resume Optimizer</div>
         <div className="nav-links">
           <a onClick={() => { setCurrentView('home'); setAnalysisResult(null); }}>Home</a>
+          <a onClick={() => setCurrentView('builder')}>Resume Builder</a>
           <a onClick={() => setCurrentView('history')}>History</a>
           <a onClick={() => setCurrentView('features')}>Features</a>
         </div>
@@ -288,6 +420,250 @@ function App() {
         </div>
       )}
 
+      {/* RESUME BUILDER PAGE */}
+      {currentView === 'builder' && (
+        <div className="resume-builder">
+          <h1>Resume Builder</h1>
+          <p>Create an ATS-friendly resume from scratch</p>
+
+          <div className="builder-container">
+            <div className="builder-form">
+              {/* Personal Information */}
+              <div className="form-section">
+                <h2>Personal Information</h2>
+                <div className="form-grid">
+                  <input
+                    type="text"
+                    placeholder="Full Name *"
+                    value={resumeData.personalInfo.name}
+                    onChange={(e) => updatePersonalInfo('name', e.target.value)}
+                    className="form-input"
+                  />
+                  <input
+                    type="email"
+                    placeholder="Email *"
+                    value={resumeData.personalInfo.email}
+                    onChange={(e) => updatePersonalInfo('email', e.target.value)}
+                    className="form-input"
+                  />
+                  <input
+                    type="tel"
+                    placeholder="Phone *"
+                    value={resumeData.personalInfo.phone}
+                    onChange={(e) => updatePersonalInfo('phone', e.target.value)}
+                    className="form-input"
+                  />
+                  <input
+                    type="text"
+                    placeholder="Location (City, State)"
+                    value={resumeData.personalInfo.location}
+                    onChange={(e) => updatePersonalInfo('location', e.target.value)}
+                    className="form-input"
+                  />
+                  <input
+                    type="url"
+                    placeholder="LinkedIn Profile"
+                    value={resumeData.personalInfo.linkedin}
+                    onChange={(e) => updatePersonalInfo('linkedin', e.target.value)}
+                    className="form-input"
+                  />
+                  <input
+                    type="url"
+                    placeholder="Website/Portfolio"
+                    value={resumeData.personalInfo.website}
+                    onChange={(e) => updatePersonalInfo('website', e.target.value)}
+                    className="form-input"
+                  />
+                </div>
+              </div>
+
+              {/* Professional Summary */}
+              <div className="form-section">
+                <h2>Professional Summary</h2>
+                <textarea
+                  placeholder="Write a brief summary highlighting your experience, skills, and career goals..."
+                  value={resumeData.summary}
+                  onChange={(e) => updateSummary(e.target.value)}
+                  className="form-textarea"
+                  rows={5}
+                />
+              </div>
+
+              {/* Experience */}
+              <div className="form-section">
+                <div className="section-header">
+                  <h2>Work Experience</h2>
+                  <button className="btn-add" onClick={addExperience}>+ Add Experience</button>
+                </div>
+                {resumeData.experience.map((exp, index) => (
+                  <div key={index} className="repeatable-section">
+                    <div className="section-remove">
+                      {resumeData.experience.length > 1 && (
+                        <button className="btn-remove" onClick={() => removeExperience(index)}>Remove</button>
+                      )}
+                    </div>
+                    <div className="form-grid">
+                      <input
+                        type="text"
+                        placeholder="Job Title *"
+                        value={exp.position}
+                        onChange={(e) => updateExperience(index, 'position', e.target.value)}
+                        className="form-input"
+                      />
+                      <input
+                        type="text"
+                        placeholder="Company Name *"
+                        value={exp.company}
+                        onChange={(e) => updateExperience(index, 'company', e.target.value)}
+                        className="form-input"
+                      />
+                      <input
+                        type="text"
+                        placeholder="Location"
+                        value={exp.location}
+                        onChange={(e) => updateExperience(index, 'location', e.target.value)}
+                        className="form-input"
+                      />
+                      <input
+                        type="text"
+                        placeholder="Start Date (e.g., Jan 2020)"
+                        value={exp.startDate}
+                        onChange={(e) => updateExperience(index, 'startDate', e.target.value)}
+                        className="form-input"
+                      />
+                      <input
+                        type="text"
+                        placeholder="End Date (or 'Present')"
+                        value={exp.endDate}
+                        onChange={(e) => updateExperience(index, 'endDate', e.target.value)}
+                        className="form-input"
+                      />
+                    </div>
+                    <textarea
+                      placeholder="Describe your responsibilities and achievements. Use bullet points:
+- Led team of 5 developers
+- Increased sales by 30%
+- Implemented new system..."
+                      value={exp.description}
+                      onChange={(e) => updateExperience(index, 'description', e.target.value)}
+                      className="form-textarea"
+                      rows={5}
+                    />
+                  </div>
+                ))}
+              </div>
+
+              {/* Education */}
+              <div className="form-section">
+                <div className="section-header">
+                  <h2>Education</h2>
+                  <button className="btn-add" onClick={addEducation}>+ Add Education</button>
+                </div>
+                {resumeData.education.map((edu, index) => (
+                  <div key={index} className="repeatable-section">
+                    <div className="section-remove">
+                      {resumeData.education.length > 1 && (
+                        <button className="btn-remove" onClick={() => removeEducation(index)}>Remove</button>
+                      )}
+                    </div>
+                    <div className="form-grid">
+                      <input
+                        type="text"
+                        placeholder="School/University *"
+                        value={edu.school}
+                        onChange={(e) => updateEducation(index, 'school', e.target.value)}
+                        className="form-input"
+                      />
+                      <input
+                        type="text"
+                        placeholder="Degree (e.g., Bachelor's)"
+                        value={edu.degree}
+                        onChange={(e) => updateEducation(index, 'degree', e.target.value)}
+                        className="form-input"
+                      />
+                      <input
+                        type="text"
+                        placeholder="Field of Study"
+                        value={edu.field}
+                        onChange={(e) => updateEducation(index, 'field', e.target.value)}
+                        className="form-input"
+                      />
+                      <input
+                        type="text"
+                        placeholder="Location"
+                        value={edu.location}
+                        onChange={(e) => updateEducation(index, 'location', e.target.value)}
+                        className="form-input"
+                      />
+                      <input
+                        type="text"
+                        placeholder="Graduation Date"
+                        value={edu.graduationDate}
+                        onChange={(e) => updateEducation(index, 'graduationDate', e.target.value)}
+                        className="form-input"
+                      />
+                      <input
+                        type="text"
+                        placeholder="GPA (optional)"
+                        value={edu.gpa}
+                        onChange={(e) => updateEducation(index, 'gpa', e.target.value)}
+                        className="form-input"
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Skills */}
+              <div className="form-section">
+                <h2>Skills</h2>
+                <textarea
+                  placeholder="Technical Skills (e.g., Python, JavaScript, React, SQL, AWS...)"
+                  value={resumeData.skills.technical}
+                  onChange={(e) => updateSkills('technical', e.target.value)}
+                  className="form-textarea"
+                  rows={3}
+                />
+                <textarea
+                  placeholder="Soft Skills (e.g., Leadership, Communication, Problem-solving...)"
+                  value={resumeData.skills.soft}
+                  onChange={(e) => updateSkills('soft', e.target.value)}
+                  className="form-textarea"
+                  rows={3}
+                />
+                <textarea
+                  placeholder="Languages (e.g., English (Native), Spanish (Fluent)...)"
+                  value={resumeData.skills.languages}
+                  onChange={(e) => updateSkills('languages', e.target.value)}
+                  className="form-textarea"
+                  rows={2}
+                />
+                <textarea
+                  placeholder="Certifications (e.g., AWS Certified, PMP, CPA...)"
+                  value={resumeData.skills.certifications}
+                  onChange={(e) => updateSkills('certifications', e.target.value)}
+                  className="form-textarea"
+                  rows={2}
+                />
+              </div>
+
+              <div className="builder-actions">
+                <button className="btn-primary" onClick={downloadResumeAsText}>
+                  Download Resume (.txt)
+                </button>
+              </div>
+            </div>
+
+            <div className="resume-preview">
+              <h3>Preview</h3>
+              <div className="preview-content">
+                <pre>{generateResumePreview()}</pre>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* FEATURES PAGE */}
       {currentView === 'features' && (
         <div className="features-page">
@@ -327,8 +703,8 @@ function App() {
 
             <div className="feature-card">
               <div className="feature-icon">📝</div>
-              <h3>Analysis History</h3>
-              <p>Track your progress over time by saving all your resume analyses and comparing improvements across versions.</p>
+              <h3>Resume Builder</h3>
+              <p>Create professional, ATS-friendly resumes from scratch with our guided resume builder tool.</p>
             </div>
           </div>
 
