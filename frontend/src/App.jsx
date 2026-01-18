@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import jsPDF from 'jspdf'
 import './App.css'
 
 function App() {
@@ -326,6 +327,156 @@ Certifications: ${resumeData.skills.certifications}
     URL.revokeObjectURL(url)
   }
 
+  const downloadResumeAsPDF = () => {
+    const doc = new jsPDF()
+    
+    // Set font sizes and positions
+    let yPosition = 20
+    const lineHeight = 7
+    const pageHeight = doc.internal.pageSize.height
+    const margin = 20
+    
+    // Helper function to add text with word wrap and page breaks
+    const addText = (text, fontSize = 11, isBold = false) => {
+      doc.setFontSize(fontSize)
+      if (isBold) {
+        doc.setFont(undefined, 'bold')
+      } else {
+        doc.setFont(undefined, 'normal')
+      }
+      
+      const lines = doc.splitTextToSize(text, 170)
+      
+      lines.forEach(line => {
+        if (yPosition > pageHeight - margin) {
+          doc.addPage()
+          yPosition = 20
+        }
+        doc.text(line, 20, yPosition)
+        yPosition += lineHeight
+      })
+    }
+    
+    // Personal Information
+    addText(resumeData.personalInfo.name, 18, true)
+    yPosition += 3
+    
+    const contactInfo = [
+      resumeData.personalInfo.email,
+      resumeData.personalInfo.phone,
+      resumeData.personalInfo.location
+    ].filter(Boolean).join(' | ')
+    
+    addText(contactInfo, 10)
+    
+    if (resumeData.personalInfo.linkedin) {
+      addText(`LinkedIn: ${resumeData.personalInfo.linkedin}`, 10)
+    }
+    if (resumeData.personalInfo.website) {
+      addText(`Website: ${resumeData.personalInfo.website}`, 10)
+    }
+    
+    yPosition += 5
+    
+    // Professional Summary
+    if (resumeData.summary) {
+      addText('PROFESSIONAL SUMMARY', 14, true)
+      yPosition += 2
+      addText(resumeData.summary, 11)
+      yPosition += 5
+    }
+    
+    // Experience
+    if (resumeData.experience.some(exp => exp.company || exp.position)) {
+      addText('EXPERIENCE', 14, true)
+      yPosition += 2
+      
+      resumeData.experience.forEach(exp => {
+        if (exp.position || exp.company) {
+          addText(`${exp.position}${exp.position && exp.company ? ' - ' : ''}${exp.company}`, 12, true)
+          
+          const expDetails = [
+            exp.location,
+            exp.startDate && exp.endDate ? `${exp.startDate} - ${exp.endDate}` : exp.startDate || exp.endDate
+          ].filter(Boolean).join(' | ')
+          
+          if (expDetails) {
+            addText(expDetails, 10)
+          }
+          
+          if (exp.description) {
+            yPosition += 1
+            addText(exp.description, 11)
+          }
+          
+          yPosition += 3
+        }
+      })
+      
+      yPosition += 2
+    }
+    
+    // Education
+    if (resumeData.education.some(edu => edu.school || edu.degree)) {
+      addText('EDUCATION', 14, true)
+      yPosition += 2
+      
+      resumeData.education.forEach(edu => {
+        if (edu.degree || edu.field || edu.school) {
+          const degreeText = [
+            edu.degree,
+            edu.field ? `in ${edu.field}` : '',
+            edu.school ? `- ${edu.school}` : ''
+          ].filter(Boolean).join(' ')
+          
+          addText(degreeText, 12, true)
+          
+          const eduDetails = [
+            edu.location,
+            edu.graduationDate ? `Graduated: ${edu.graduationDate}` : '',
+            edu.gpa ? `GPA: ${edu.gpa}` : ''
+          ].filter(Boolean).join(' | ')
+          
+          if (eduDetails) {
+            addText(eduDetails, 10)
+          }
+          
+          yPosition += 3
+        }
+      })
+      
+      yPosition += 2
+    }
+    
+    // Skills
+    const hasSkills = Object.values(resumeData.skills).some(skill => skill.trim())
+    
+    if (hasSkills) {
+      addText('SKILLS', 14, true)
+      yPosition += 2
+      
+      if (resumeData.skills.technical) {
+        addText(`Technical Skills: ${resumeData.skills.technical}`, 11)
+      }
+      if (resumeData.skills.soft) {
+        addText(`Soft Skills: ${resumeData.skills.soft}`, 11)
+      }
+      if (resumeData.skills.languages) {
+        addText(`Languages: ${resumeData.skills.languages}`, 11)
+      }
+      if (resumeData.skills.certifications) {
+        addText(`Certifications: ${resumeData.skills.certifications}`, 11)
+      }
+    }
+    
+    // Save the PDF
+    const fileName = resumeData.personalInfo.name 
+      ? `${resumeData.personalInfo.name.replace(/\s+/g, '_')}_Resume.pdf`
+      : 'Resume.pdf'
+    
+    doc.save(fileName)
+  }
+
   return (
     <div className="App">
       <nav className="navbar">
@@ -648,8 +799,11 @@ Certifications: ${resumeData.skills.certifications}
               </div>
 
               <div className="builder-actions">
-                <button className="btn-primary" onClick={downloadResumeAsText}>
-                  Download Resume (.txt)
+                <button className="btn-secondary" onClick={downloadResumeAsText}>
+                  Download as Text (.txt)
+                </button>
+                <button className="btn-primary" onClick={downloadResumeAsPDF}>
+                  Download as PDF (.pdf)
                 </button>
               </div>
             </div>
