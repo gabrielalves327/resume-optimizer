@@ -131,6 +131,8 @@ body {
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   resize: vertical;
   transition: border-color 0.3s ease;
+  background: white;
+  color: #1f2937;
 }
 
 .job-description-input:focus {
