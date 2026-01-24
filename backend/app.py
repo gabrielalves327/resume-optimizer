@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, request
+pythonfrom flask import Flask, jsonify, request
 from flask_cors import CORS
 from datetime import datetime
 import os
@@ -443,11 +443,12 @@ def get_history():
 
 if __name__ == '__main__':
     print("🚀 Starting Resume Optimizer API...")
-    print("📍 Server running on http://localhost:5000")
-    print(f"📁 Upload folder: {UPLOAD_FOLDER}")
+    print("📁 Upload folder: {UPLOAD_FOLDER}")
     print(f"🤖 OpenAI API: {'Connected' if os.getenv('OPENAI_API_KEY') else 'Not configured'}")
     
     # Initialize database
     init_database()
     
-    app.run(debug=True, port=5000)
+    # Run on 0.0.0.0 to be accessible from internet (required for Render)
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port, debug=False)
