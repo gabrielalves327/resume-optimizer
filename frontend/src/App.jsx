@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react'
 import jsPDF from 'jspdf'
 import './App.css'
 
+const API_URL = 'https://resume-optimizer-backend-4ng9.onrender.com'
+
 function App() {
   const [apiStatus, setApiStatus] = useState('checking...')
   const [apiMessage, setApiMessage] = useState('')
@@ -43,7 +45,7 @@ function App() {
 
   useEffect(() => {
     // Test API connection on load
-    fetch('http://localhost:5000/')
+    fetch(`${API_URL}/`)
       .then(res => res.json())
       .then(data => {
         setApiStatus('✅ Connected')
@@ -51,7 +53,7 @@ function App() {
       })
       .catch(err => {
         setApiStatus('❌ Not Connected')
-        setApiMessage('Make sure Flask backend is running on port 5000')
+        setApiMessage('Backend is spinning up or unavailable')
       })
   }, [])
 
@@ -65,7 +67,7 @@ function App() {
   const loadHistory = async () => {
     setIsLoadingHistory(true)
     try {
-      const response = await fetch('http://localhost:5000/api/history')
+      const response = await fetch(`${API_URL}/api/history`)
       const data = await response.json()
       setAnalysisHistory(data.analyses)
     } catch (error) {
@@ -153,7 +155,7 @@ function App() {
     try {
       console.log('Sending file to backend for AI analysis...')
       
-      const response = await fetch('http://localhost:5000/api/upload', {
+      const response = await fetch(`${API_URL}/api/upload`, {
         method: 'POST',
         body: formData
       })
@@ -177,7 +179,7 @@ function App() {
       }
     } catch (error) {
       console.error('Upload error:', error)
-      setUploadError('❌ Failed to connect to server. Make sure the backend is running on port 5000.')
+      setUploadError('❌ Failed to connect to server. Backend may be spinning up (takes 30-60 seconds on first request).')
     } finally {
       setIsUploading(false)
     }
@@ -558,7 +560,7 @@ Certifications: ${resumeData.skills.certifications}
               <div className="spinner"></div>
               <div className="loading-message">
                 <strong>⏳ Analyzing your resume with AI...</strong>
-                <p>This may take 10-15 seconds. Please wait.</p>
+                <p>This may take 10-15 seconds. If first request, backend may take 30-60 seconds to spin up.</p>
               </div>
             </div>
           )}
