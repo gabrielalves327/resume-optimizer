@@ -15,7 +15,7 @@ import re
 load_dotenv()
 
 app = Flask(__name__)
-CORS(app)
+CORS(app, origins=["https://resume-optimizer-tau.vercel.app", "http://localhost:5173"]))
 
 # Configuration
 UPLOAD_FOLDER = 'uploads'
