@@ -15,7 +15,7 @@ import re
 load_dotenv()
 
 app = Flask(__name__)
-CORS(app, resources={r"/*": {"origins": "*"}})
+CORS(app)
 
 # Configuration
 UPLOAD_FOLDER = 'uploads'
@@ -330,26 +330,38 @@ Format your response as JSON with this structure:
 # Home route
 @app.route('/')
 def home():
-    return jsonify({
+    response = jsonify({
         "message": "Resume Optimizer API is running!",
         "version": "1.0",
         "timestamp": datetime.now().isoformat()
     })
+    response.headers.add('Access-Control-Allow-Origin', '*')
+    return response
 
 # Health check endpoint
 @app.route('/api/health')
 def health():
-    return jsonify({
+    response = jsonify({
         "status": "healthy",
         "service": "Resume Optimizer API",
         "version": "1.0",
         "openai_connected": os.getenv('OPENAI_API_KEY') is not None
     })
+    response.headers.add('Access-Control-Allow-Origin', '*')
+    return response
 
 # Upload and analyze endpoint
-@app.route('/api/upload', methods=['POST'])
+@app.route('/api/upload', methods=['POST', 'OPTIONS'])
 def upload_resume():
     """Handle resume file upload and analysis"""
+    
+    # Handle preflight request
+    if request.method == 'OPTIONS':
+        response = jsonify({'status': 'ok'})
+        response.headers.add('Access-Control-Allow-Origin', '*')
+        response.headers.add('Access-Control-Allow-Headers', 'Content-Type')
+        response.headers.add('Access-Control-Allow-Methods', 'POST')
+        return response
     
     # Check if file is in request
     if 'file' not in request.files:
@@ -422,28 +434,32 @@ def upload_resume():
     analysis_id = save_analysis_to_db(filename, analysis_result)
     
     # Return success response with analysis
-    return jsonify({
+    response = jsonify({
         "message": "File uploaded and analyzed successfully",
         "filename": filename,
         "size": file_size,
         "status": "analyzed",
         "analysis": analysis_result,
         "analysis_id": analysis_id
-    }), 200
+    })
+    response.headers.add('Access-Control-Allow-Origin', '*')
+    return response, 200
 
 # History route - Get all analyses
 @app.route('/api/history', methods=['GET'])
 def get_history():
     """Get all saved analyses"""
     analyses = get_all_analyses()
-    return jsonify({
+    response = jsonify({
         "count": len(analyses),
         "analyses": analyses
-    }), 200
+    })
+    response.headers.add('Access-Control-Allow-Origin', '*')
+    return response, 200
 
 if __name__ == '__main__':
     print("🚀 Starting Resume Optimizer API...")
-    print("📁 Upload folder: {UPLOAD_FOLDER}")
+    print(f"📁 Upload folder: {UPLOAD_FOLDER}")
     print(f"🤖 OpenAI API: {'Connected' if os.getenv('OPENAI_API_KEY') else 'Not configured'}")
     
     # Initialize database
@@ -451,4 +467,4 @@ if __name__ == '__main__':
     
     # Run on 0.0.0.0 to be accessible from internet (required for Render)
     port = int(os.environ.get('PORT', 5000))
-    app.run(host='0.0.0.0', port=port, debug=False)
+    app.run(host='0.0.0.0', port=port, debug=Fals
