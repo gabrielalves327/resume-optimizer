@@ -78,7 +78,6 @@ function App() {
 
       if (response.ok) {
         setUploadSuccess(`✓ Analysis complete!`)
-        // The backend now sends a clean object, no JSON.parse needed
         if (data.analysis) {
           setAnalysisResult(data.analysis)
           setCurrentView('results')
@@ -95,7 +94,6 @@ function App() {
     }
   }
 
-  // --- BUILDER LOGIC ---
   const updatePersonalInfo = (field, value) => setResumeData(p => ({ ...p, personalInfo: { ...p.personalInfo, [field]: value } }))
   const updateSummary = (value) => setResumeData(p => ({ ...p, summary: value }))
   
@@ -113,7 +111,6 @@ function App() {
         <div className="nav-links">
           <button onClick={() => setCurrentView('home')}>Home</button>
           <button onClick={() => setCurrentView('builder')}>Builder</button>
-          <button onClick={() => setCurrentView('features')}>Features</button>
         </div>
       </nav>
 
@@ -149,4 +146,44 @@ function App() {
       {currentView === 'results' && analysisResult && (
         <div className="analysis-results">
           <div className="score-card">
-            <div className="score-number">{analysisResult.
+            <div className="score-number">{analysisResult.overall_score}</div>
+            <p>Overall Match Score</p>
+          </div>
+          
+          <div className="results-grid">
+            <section>
+              <h3>Summary Analysis</h3>
+              <p>{analysisResult.summary}</p>
+            </section>
+            <section>
+              <h3>Experience Feedback</h3>
+              <p>{analysisResult.experience}</p>
+            </section>
+            <section>
+              <h3>Skills Gaps</h3>
+              <p>{analysisResult.skills}</p>
+            </section>
+            <section>
+              <h3>Key Improvements</h3>
+              <ul>
+                {analysisResult.key_improvements?.map((imp, i) => <li key={i}>{imp}</li>)}
+              </ul>
+            </section>
+          </div>
+          <button className="btn-primary" onClick={() => setCurrentView('home')}>Start New Analysis</button>
+        </div>
+      )}
+
+      {currentView === 'builder' && (
+        <div className="resume-builder">
+          <h2>Resume Builder</h2>
+          <input placeholder="Full Name" onChange={(e) => updatePersonalInfo('name', e.target.value)} />
+          <textarea placeholder="Summary" onChange={(e) => updateSummary(e.target.value)} />
+          <button onClick={downloadResumeAsPDF} className="btn-primary">Download PDF</button>
+        </div>
+      )}
+    </div>
+  )
+}
+
+export default App
