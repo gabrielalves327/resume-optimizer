@@ -1,5 +1,4 @@
 from flask import Flask, jsonify, request
-from flask_cors import CORS
 from datetime import datetime
 import os
 from werkzeug.utils import secure_filename
@@ -15,7 +14,14 @@ import re
 load_dotenv()
 
 app = Flask(__name__)
-CORS(app)
+
+# Manual CORS - add headers to EVERY response
+@app.after_request
+def add_cors_headers(response):
+    response.headers['Access-Control-Allow-Origin'] = '*'
+    response.headers['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS'
+    response.headers['Access-Control-Allow-Headers'] = 'Content-Type'
+    return response
 
 # Configuration
 UPLOAD_FOLDER = 'uploads'
@@ -330,25 +336,21 @@ Format your response as JSON with this structure:
 # Home route
 @app.route('/')
 def home():
-    response = jsonify({
+    return jsonify({
         "message": "Resume Optimizer API is running!",
         "version": "1.0",
         "timestamp": datetime.now().isoformat()
     })
-    response.headers.add('Access-Control-Allow-Origin', '*')
-    return response
 
 # Health check endpoint
 @app.route('/api/health')
 def health():
-    response = jsonify({
+    return jsonify({
         "status": "healthy",
         "service": "Resume Optimizer API",
         "version": "1.0",
         "openai_connected": os.getenv('OPENAI_API_KEY') is not None
     })
-    response.headers.add('Access-Control-Allow-Origin', '*')
-    return response
 
 # Upload and analyze endpoint
 @app.route('/api/upload', methods=['POST', 'OPTIONS'])
@@ -357,11 +359,7 @@ def upload_resume():
     
     # Handle preflight request
     if request.method == 'OPTIONS':
-        response = jsonify({'status': 'ok'})
-        response.headers.add('Access-Control-Allow-Origin', '*')
-        response.headers.add('Access-Control-Allow-Headers', 'Content-Type')
-        response.headers.add('Access-Control-Allow-Methods', 'POST')
-        return response
+        return jsonify({'status': 'ok'})
     
     # Check if file is in request
     if 'file' not in request.files:
@@ -434,28 +432,27 @@ def upload_resume():
     analysis_id = save_analysis_to_db(filename, analysis_result)
     
     # Return success response with analysis
-    response = jsonify({
+    return jsonify({
         "message": "File uploaded and analyzed successfully",
         "filename": filename,
         "size": file_size,
         "status": "analyzed",
         "analysis": analysis_result,
         "analysis_id": analysis_id
-    })
-    response.headers.add('Access-Control-Allow-Origin', '*')
-    return response, 200
+    }), 200
 
 # History route - Get all analyses
-@app.route('/api/history', methods=['GET'])
+@app.route('/api/history', methods=['GET', 'OPTIONS'])
 def get_history():
     """Get all saved analyses"""
+    if request.method == 'OPTIONS':
+        return jsonify({'status': 'ok'})
+    
     analyses = get_all_analyses()
-    response = jsonify({
+    return jsonify({
         "count": len(analyses),
         "analyses": analyses
-    })
-    response.headers.add('Access-Control-Allow-Origin', '*')
-    return response, 200
+    }), 200
 
 if __name__ == '__main__':
     print("🚀 Starting Resume Optimizer API...")
