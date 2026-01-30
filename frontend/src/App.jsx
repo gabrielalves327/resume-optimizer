@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import jsPDF from 'jspdf'
 import './App.css'
 
-const API_URL = ''
+const API_URL = 'https://resume-optimizer-production-e852.up.railway.app'
 
 function App() {
   const [apiStatus, setApiStatus] = useState('checking...')
