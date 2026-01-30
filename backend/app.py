@@ -1,6 +1,5 @@
 from flask import Flask, jsonify, request
 from flask_cors import CORS
-from datetime import datetime
 import os
 from werkzeug.utils import secure_filename
 from openai import OpenAI
@@ -8,29 +7,22 @@ from dotenv import load_dotenv
 import PyPDF2
 from docx import Document
 import json
-import re
 
 load_dotenv()
 
 app = Flask(__name__)
-
-# FIXED CORS: Using the most permissive setting to bypass the error in your screenshot
+# Permit access from your Vercel frontend
 CORS(app, resources={r"/*": {"origins": "*"}})
 
-# Configuration
-UPLOAD_FOLDER = '/tmp'  # Required for Render Free Tier
+UPLOAD_FOLDER = '/tmp'
 ALLOWED_EXTENSIONS = {'pdf', 'docx'}
-MAX_FILE_SIZE = 5 * 1024 * 1024 
 
 if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
 
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-app.config['MAX_CONTENT_LENGTH'] = MAX_FILE_SIZE
-
 openai_client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
 
-# --- HELPER FUNCTIONS ---
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
@@ -41,7 +33,7 @@ def extract_text_from_pdf(filepath):
             pdf_reader = PyPDF2.PdfReader(file)
             for page in pdf_reader.pages:
                 text += page.extract_text() or ""
-    except Exception as e: print(f"Error: {e}")
+    except Exception as e: print(f"PDF Error: {e}")
     return text
 
 def extract_text_from_docx(filepath):
@@ -50,21 +42,37 @@ def extract_text_from_docx(filepath):
         doc = Document(filepath)
         for paragraph in doc.paragraphs:
             text += paragraph.text + "\n"
-    except Exception as e: print(f"Error: {e}")
+    except Exception as e: print(f"Docx Error: {e}")
     return text
 
-# --- ROUTES ---
+def analyze_resume_with_ai(resume_text, job_description=None):
+    prompt = f"""Analyze this resume {'against the job description' if job_description else ''}. 
+    Resume: {resume_text}
+    Job Description: {job_description if job_description else 'N/A'}
+    
+    Return ONLY a JSON object with these keys: 
+    overall_score (number), summary (string), experience (string), skills (string), education (string), key_improvements (list of strings)."""
+    
+    try:
+        response = openai_client.chat.completions.create(
+            model="gpt-3.5-turbo",
+            messages=[
+                {"role": "system", "content": "You are a professional resume reviewer. Your output must be valid JSON only. No markdown, no backticks."},
+                {"role": "user", "content": prompt}
+            ],
+            temperature=0.3
+        )
+        content = response.choices[0].message.content.strip()
+        # Clean AI filler
+        content = content.replace("```json", "").replace("```", "").strip()
+        return json.loads(content)
+    except Exception as e:
+        print(f"AI Error: {e}")
+        return None
 
 @app.route('/')
 def home():
     return jsonify({"message": "API is live", "status": "online"})
-
-@app.route('/api/health')
-def health():
-    return jsonify({
-        "status": "healthy",
-        "openai_key": os.getenv('OPENAI_API_KEY') is not None
-    })
 
 @app.route('/api/upload', methods=['POST', 'OPTIONS'])
 def upload_resume():
@@ -75,30 +83,30 @@ def upload_resume():
         return jsonify({"error": "No file provided"}), 400
     
     file = request.files['file']
-    if file.filename == '':
-        return jsonify({"error": "No file selected"}), 400
-    
+    job_desc = request.form.get('job_description', '')
+
     if file and allowed_file(file.filename):
         filename = secure_filename(file.filename)
         filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
         file.save(filepath)
         
-        # Determine extraction method
         ext = filename.rsplit('.', 1)[1].lower()
         resume_text = extract_text_from_pdf(filepath) if ext == 'pdf' else extract_text_from_docx(filepath)
         
-        # Cleanup file immediately after reading to save space
         if os.path.exists(filepath):
             os.remove(filepath)
 
         if not resume_text:
             return jsonify({"error": "Failed to extract text"}), 400
 
-        # Mock Analysis for now to ensure connection works
+        analysis = analyze_resume_with_ai(resume_text, job_desc)
+
+        if not analysis:
+            return jsonify({"error": "AI analysis failed"}), 500
+
         return jsonify({
             "status": "success",
-            "message": "Resume received and processed",
-            "text_length": len(resume_text)
+            "analysis": analysis # This is now a dict, not a string
         }), 200
 
     return jsonify({"error": "Invalid file type"}), 400
