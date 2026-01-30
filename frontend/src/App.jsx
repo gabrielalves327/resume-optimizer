@@ -1,197 +1,143 @@
-import { useState, useEffect } from 'react'
-import jsPDF from 'jspdf'
-import './App.css'
+from flask import Flask, jsonify, request
+from flask_cors import CORS
+from datetime import datetime
+import os
+from werkzeug.utils import secure_filename
+from openai import OpenAI
+from dotenv import load_dotenv
+import PyPDF2
+from docx import Document
+import json
+import re
 
-const API_URL = 'https://resume-optimizer-production-e852.up.railway.app'
+load_dotenv()
 
-function App() {
-  const [apiStatus, setApiStatus] = useState('checking...')
-  const [apiMessage, setApiMessage] = useState('')
-  const [selectedFile, setSelectedFile] = useState(null)
-  const [jobDescription, setJobDescription] = useState('')
-  const [uploadError, setUploadError] = useState('')
-  const [uploadSuccess, setUploadSuccess] = useState('')
-  const [isDragging, setIsDragging] = useState(false)
-  const [isUploading, setIsUploading] = useState(false)
-  const [analysisResult, setAnalysisResult] = useState(null)
-  const [currentView, setCurrentView] = useState('home')
-  const [analysisHistory, setAnalysisHistory] = useState([])
-  const [isLoadingHistory, setIsLoadingHistory] = useState(false)
+app = Flask(__name__)
+CORS(app, resources={r"/*": {"origins": "*"}})
 
-  // Resume builder state
-  const [resumeData, setResumeData] = useState({
-    personalInfo: {
-      name: '',
-      email: '',
-      phone: '',
-      location: '',
-      linkedin: '',
-      website: ''
-    },
-    summary: '',
-    experience: [
-      { company: '', position: '', location: '', startDate: '', endDate: '', description: '' }
-    ],
-    education: [
-      { school: '', degree: '', field: '', location: '', graduationDate: '', gpa: '' }
-    ],
-    skills: {
-      technical: '',
-      soft: '',
-      languages: '',
-      certifications: ''
-    }
-  })
+UPLOAD_FOLDER = '/tmp'
+ALLOWED_EXTENSIONS = {'pdf', 'docx'}
+MAX_FILE_SIZE = 5 * 1024 * 1024
 
-  useEffect(() => {
-    // Test API connection on load
-    fetch(`${API_URL}/`)
-      .then(res => res.json())
-      .then(data => {
-        setApiStatus('✅ Connected')
-        setApiMessage(data.message)
-      })
-      .catch(err => {
-        setApiStatus('❌ Not Connected')
-        setApiMessage('Backend is offline')
-      })
-  }, [])
+if not os.path.exists(UPLOAD_FOLDER):
+    os.makedirs(UPLOAD_FOLDER)
 
-  const loadHistory = async () => {
-    setIsLoadingHistory(true)
-    try {
-      const response = await fetch(`${API_URL}/api/history`)
-      const data = await response.json()
-      setAnalysisHistory(data.analyses)
-    } catch (error) {
-      console.error('Error loading history:', error)
-    } finally {
-      setIsLoadingHistory(false)
-    }
-  }
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+app.config['MAX_CONTENT_LENGTH'] = MAX_FILE_SIZE
 
-  const handleFileSelect = (e) => {
-    const file = e.target.files[0]
-    if (file) processFile(file)
-  }
+openai_client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
 
-  const processFile = (file) => {
-    setUploadError('')
-    setUploadSuccess('')
-    setSelectedFile(file)
-    setUploadSuccess(`✓ ${file.name} ready`)
-  }
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-  const handleUpload = async () => {
-    if (!selectedFile) {
-      setUploadError('Please select a file first.')
-      return
-    }
+def extract_text_from_pdf(filepath):
+    text = ""
+    try:
+        with open(filepath, 'rb') as file:
+            pdf_reader = PyPDF2.PdfReader(file)
+            for page in pdf_reader.pages:
+                text += page.extract_text() or ""
+    except Exception as e:
+        print(f"PDF Error: {e}")
+    return text
 
-    setIsUploading(true)
-    setUploadError('')
-    setUploadSuccess('')
+def extract_text_from_docx(filepath):
+    text = ""
+    try:
+        doc = Document(filepath)
+        for paragraph in doc.paragraphs:
+            text += paragraph.text + "\n"
+    except Exception as e:
+        print(f"DOCX Error: {e}")
+    return text
 
-    const formData = new FormData()
-    formData.append('file', selectedFile)
-    if (jobDescription.trim()) {
-      formData.append('job_description', jobDescription.trim())
-    }
+def analyze_resume_with_ai(resume_text, job_description=None):
+    prompt = f"""Analyze this resume and provide feedback.
 
-    try {
-      const response = await fetch(`${API_URL}/api/upload`, {
-        method: 'POST',
-        body: formData
-      })
+Resume:
+{resume_text}
 
-      const data = await response.json()
+{f"Job Description: {job_description}" if job_description else ""}
 
-      if (response.ok) {
-        setUploadSuccess(`✓ Analysis complete!`)
-        try {
-          // This was the original logic that expected a JSON string
-          const analysis = JSON.parse(data.analysis)
-          setAnalysisResult(analysis)
-        } catch (e) {
-          console.error('Parsing error:', e)
-          setUploadError('❌ Failed to parse analysis.')
-        }
-      } else {
-        setUploadError(`❌ ${data.error || 'Upload failed.'}`)
-      }
-    } catch (error) {
-      setUploadError('❌ Connection failed.')
-    } finally {
-      setIsUploading(false)
-    }
-  }
+Return ONLY valid JSON with these keys:
+{{
+    "overall_score": <0-100>,
+    "summary": {{"score": <0-100>, "status": "good/needs_work/critical", "feedback": "<feedback>"}},
+    "experience": {{"score": <0-100>, "status": "good/needs_work/critical", "feedback": "<feedback>"}},
+    "skills": {{"score": <0-100>, "status": "good/needs_work/critical", "feedback": "<feedback>"}},
+    "education": {{"score": <0-100>, "status": "good/needs_work/critical", "feedback": "<feedback>"}},
+    "ats_score": <0-100>,
+    "key_improvements": ["improvement 1", "improvement 2", "improvement 3"]
+}}"""
 
-  const updatePersonalInfo = (field, value) => {
-    setResumeData(prev => ({
-      ...prev,
-      personalInfo: { ...prev.personalInfo, [field]: value }
-    }))
-  }
+    try:
+        response = openai_client.chat.completions.create(
+            model="gpt-3.5-turbo",
+            messages=[
+                {"role": "system", "content": "You are an expert resume reviewer. Always respond with valid JSON only, no markdown."},
+                {"role": "user", "content": prompt}
+            ],
+            temperature=0.7,
+            max_tokens=1500
+        )
+        return response.choices[0].message.content
+    except Exception as e:
+        print(f"OpenAI API Error: {e}")
+        return None
 
-  return (
-    <div className="App">
-      <nav className="navbar">
-        <div className="logo" onClick={() => setCurrentView('home')}>Resume Optimizer</div>
-        <div className="nav-links">
-          <button onClick={() => setCurrentView('home')}>Home</button>
-          <button onClick={() => setCurrentView('builder')}>Builder</button>
-          <button onClick={() => {setCurrentView('history'); loadHistory();}}>History</button>
-        </div>
-      </nav>
+@app.route('/')
+def home():
+    return jsonify({"message": "Resume Optimizer API is running!", "status": "online"})
 
-      <div className="status-bar">
-        <span>API: {apiStatus}</span>
-      </div>
+@app.route('/api/health')
+def health():
+    return jsonify({"status": "healthy", "openai_connected": os.getenv('OPENAI_API_KEY') is not None})
 
-      {currentView === 'home' && (
-        <div className="hero">
-          <h1>AI Resume Optimizer</h1>
-          <div className="upload-section">
-            <input type="file" onChange={handleFileSelect} />
-            <textarea 
-              placeholder="Paste Job Description..." 
-              value={jobDescription}
-              onChange={(e) => setJobDescription(e.target.value)}
-            />
-            <button onClick={handleUpload} disabled={isUploading}>
-              {isUploading ? 'Analyzing...' : 'Upload & Analyze'}
-            </button>
-          </div>
-          {uploadError && <p className="error">{uploadError}</p>}
-          {uploadSuccess && <p className="success">{uploadSuccess}</p>}
-        </div>
-      )}
+@app.route('/api/upload', methods=['POST', 'OPTIONS'])
+def upload_resume():
+    if request.method == 'OPTIONS':
+        return jsonify({'status': 'ok'})
+    
+    if 'file' not in request.files:
+        return jsonify({"error": "No file provided"}), 400
+    
+    file = request.files['file']
+    job_description = request.form.get('job_description', '').strip()
+    
+    if file.filename == '':
+        return jsonify({"error": "No file selected"}), 400
+    
+    if not allowed_file(file.filename):
+        return jsonify({"error": "Only PDF and DOCX allowed"}), 400
+    
+    filename = secure_filename(file.filename)
+    filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+    file.save(filepath)
+    
+    ext = filename.rsplit('.', 1)[1].lower()
+    resume_text = extract_text_from_pdf(filepath) if ext == 'pdf' else extract_text_from_docx(filepath)
+    
+    if os.path.exists(filepath):
+        os.remove(filepath)
+    
+    if not resume_text or len(resume_text.strip()) < 50:
+        return jsonify({"error": "Could not extract text from resume"}), 400
+    
+    analysis = analyze_resume_with_ai(resume_text, job_description)
+    
+    if not analysis:
+        return jsonify({"error": "AI analysis failed"}), 500
+    
+    return jsonify({
+        "message": "Analysis complete",
+        "filename": filename,
+        "analysis": analysis
+    }), 200
 
-      {currentView === 'builder' && (
-        <div className="builder-view">
-          <h2>Resume Builder</h2>
-          <input 
-            placeholder="Full Name" 
-            onChange={(e) => updatePersonalInfo('name', e.target.value)} 
-          />
-          {/* Builder content */}
-        </div>
-      )}
+@app.route('/api/history', methods=['GET'])
+def get_history():
+    return jsonify({"analyses": []})
 
-      {currentView === 'history' && (
-        <div className="history-view">
-          <h2>Analysis History</h2>
-          {isLoadingHistory ? <p>Loading...</p> : (
-            <ul>
-              {analysisHistory.map((item, index) => (
-                <li key={index}>{item.filename} - {item.date}</li>
-              ))}
-            </ul>
-          )}
-        </div>
-      )}
-    </div>
-  )
-}
-
-export default App
+if __name__ == '__main__':
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port)
