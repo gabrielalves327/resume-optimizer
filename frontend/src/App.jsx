@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react'
 import jsPDF from 'jspdf'
 import './App.css'
 
-// MAKE SURE THIS MATCHES YOUR RAILWAY URL EXACTLY
 const API_URL = 'https://resume-optimizer-production-e852.up.railway.app'
 
 function App() {
@@ -17,7 +16,6 @@ function App() {
   const [analysisResult, setAnalysisResult] = useState(null)
   const [currentView, setCurrentView] = useState('home')
 
-  // Resume builder state
   const [resumeData, setResumeData] = useState({
     personalInfo: { name: '', email: '', phone: '', location: '', linkedin: '', website: '' },
     summary: '',
@@ -88,7 +86,7 @@ function App() {
         setUploadError(`❌ ${data.error || 'Upload failed.'}`)
       }
     } catch (error) {
-      setUploadError('❌ Connection failed. Ensure your Railway URL is correct.')
+      setUploadError('❌ Connection failed.')
     } finally {
       setIsUploading(false)
     }
@@ -140,37 +138,39 @@ function App() {
 
           {isUploading && <div className="spinner"></div>}
           {uploadError && <p className="error-message">{uploadError}</p>}
+          {uploadSuccess && <p className="success-message">{uploadSuccess}</p>}
         </div>
       )}
 
       {currentView === 'results' && analysisResult && (
         <div className="analysis-results">
+          <h2>Analysis Results</h2>
           <div className="score-card">
-            <div className="score-number">{analysisResult.overall_score}</div>
-            <p>Overall Match Score</p>
+            <div className="score-number">{analysisResult.overall_score || 'N/A'}</div>
+            <p>Overall Score</p>
           </div>
           
           <div className="results-grid">
             <section>
-              <h3>Summary Analysis</h3>
-              <p>{analysisResult.summary}</p>
+              <h3>Summary</h3>
+              <p>{analysisResult.summary || 'No summary available'}</p>
             </section>
             <section>
-              <h3>Experience Feedback</h3>
-              <p>{analysisResult.experience}</p>
+              <h3>Experience</h3>
+              <p>{analysisResult.experience || 'No experience feedback'}</p>
             </section>
             <section>
-              <h3>Skills Gaps</h3>
-              <p>{analysisResult.skills}</p>
+              <h3>Skills</h3>
+              <p>{analysisResult.skills || 'No skills feedback'}</p>
             </section>
             <section>
               <h3>Key Improvements</h3>
               <ul>
-                {analysisResult.key_improvements?.map((imp, i) => <li key={i}>{imp}</li>)}
+                {analysisResult.key_improvements && analysisResult.key_improvements.map((imp, i) => <li key={i}>{imp}</li>)}
               </ul>
             </section>
           </div>
-          <button className="btn-primary" onClick={() => setCurrentView('home')}>Start New Analysis</button>
+          <button className="btn-primary" onClick={() => { setCurrentView('home'); setAnalysisResult(null); setSelectedFile(null); }}>New Analysis</button>
         </div>
       )}
 
@@ -182,6 +182,10 @@ function App() {
           <button onClick={downloadResumeAsPDF} className="btn-primary">Download PDF</button>
         </div>
       )}
+
+      <div className="api-status">
+        <p>Backend: {apiStatus}</p>
+      </div>
     </div>
   )
 }
