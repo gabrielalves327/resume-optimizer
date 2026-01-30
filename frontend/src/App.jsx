@@ -45,7 +45,7 @@ function App() {
 
   useEffect(() => {
     // Test API connection on load
-    fetch(`${API_URL}/backend-health`)
+    fetch(`${API_URL}/`)
       .then(res => res.json())
       .then(data => {
         setApiStatus('✅ Connected')
