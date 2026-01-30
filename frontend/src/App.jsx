@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import jsPDF from 'jspdf'
 import './App.css'
 
-const API_URL = 'https://resume-optimizer-backend-4ng9.onrender.com'
+const API_URL = ''
 
 function App() {
   const [apiStatus, setApiStatus] = useState('checking...')
@@ -45,7 +45,7 @@ function App() {
 
   useEffect(() => {
     // Test API connection on load
-    fetch(`${API_URL}/`)
+    fetch(`${API_URL}/backend-health`)
       .then(res => res.json())
       .then(data => {
         setApiStatus('✅ Connected')
