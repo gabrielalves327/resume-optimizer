@@ -25,109 +25,109 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 openai_client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
 
-# Common technical skills to detect
-TECH_SKILLS = [
-    'python', 'javascript', 'java', 'c++', 'c#', 'ruby', 'php', 'swift', 'kotlin', 'typescript', 'go', 'rust', 'sql', 'html', 'css',
-    'react', 'angular', 'vue', 'node.js', 'express', 'django', 'flask', 'spring', 'laravel', '.net', 'jquery',
-    'aws', 'azure', 'gcp', 'docker', 'kubernetes', 'jenkins', 'git', 'github', 'gitlab', 'ci/cd',
-    'mongodb', 'postgresql', 'mysql', 'redis', 'elasticsearch', 'dynamodb', 'firebase',
-    'machine learning', 'deep learning', 'tensorflow', 'pytorch', 'data science', 'ai', 'nlp',
-    'agile', 'scrum', 'jira', 'confluence', 'rest api', 'graphql', 'microservices',
-    'linux', 'windows', 'macos', 'unix', 'bash', 'powershell', 'active directory',
-    'networking', 'tcp/ip', 'dns', 'dhcp', 'vpn', 'firewall', 'security', 'cybersecurity',
-    'helpdesk', 'troubleshooting', 'technical support', 'customer service', 'ticketing',
-    'servicenow', 'zendesk', 'salesforce', 'sap', 'oracle', 'sharepoint', 'office 365',
-    'excel', 'powerpoint', 'outlook', 'teams', 'slack', 'zoom', 'virtualization', 'vmware'
-]
-
-# Strong action verbs
-ACTION_VERBS = [
-    'achieved', 'accomplished', 'accelerated', 'administered', 'analyzed', 'built', 'collaborated',
-    'created', 'delivered', 'designed', 'developed', 'directed', 'drove', 'enhanced', 'established',
-    'executed', 'expanded', 'generated', 'grew', 'implemented', 'improved', 'increased', 'initiated',
-    'launched', 'led', 'managed', 'optimized', 'orchestrated', 'oversaw', 'pioneered', 'produced',
-    'reduced', 'redesigned', 'resolved', 'restructured', 'revamped', 'scaled', 'spearheaded',
-    'streamlined', 'strengthened', 'supervised', 'transformed', 'upgraded', 'troubleshot',
-    'configured', 'installed', 'maintained', 'monitored', 'diagnosed', 'supported', 'trained'
-]
-
-# Words to IGNORE in keyword matching (generic/filler words)
-STOPWORDS = {
-    # Common verbs
-    'make', 'made', 'making', 'take', 'taking', 'taken', 'give', 'giving', 'given',
-    'come', 'coming', 'came', 'going', 'went', 'gone', 'know', 'known', 'knowing',
-    'think', 'thinking', 'want', 'wanting', 'look', 'looking', 'use', 'using', 'used',
-    'find', 'finding', 'found', 'tell', 'telling', 'told', 'ask', 'asking', 'asked',
-    'work', 'working', 'worked', 'seem', 'feel', 'try', 'leave', 'call', 'keep',
-    'let', 'begin', 'show', 'hear', 'play', 'run', 'move', 'live', 'believe',
-    'bring', 'happen', 'write', 'provide', 'sit', 'stand', 'lose', 'pay', 'meet',
-    'include', 'continue', 'set', 'learn', 'change', 'lead', 'understand', 'watch',
-    'follow', 'stop', 'create', 'speak', 'read', 'allow', 'add', 'spend', 'grow',
-    'open', 'walk', 'win', 'offer', 'remember', 'love', 'consider', 'appear',
-    'buy', 'wait', 'serve', 'die', 'send', 'expect', 'build', 'stay', 'fall',
-    'cut', 'reach', 'kill', 'remain', 'suggest', 'raise', 'pass', 'sell', 'require',
-    'report', 'decide', 'pull',
+# WHITELIST: Only these keywords matter for ATS - real technical/professional terms
+ATS_KEYWORDS = {
+    # Programming Languages
+    'python', 'javascript', 'java', 'c++', 'c#', 'ruby', 'php', 'swift', 'kotlin', 
+    'typescript', 'golang', 'rust', 'scala', 'perl', 'bash', 'powershell', 'sql',
+    'html', 'css', 'sass', 'less', 'xml', 'json', 'yaml',
     
-    # Common nouns
-    'time', 'year', 'years', 'people', 'way', 'day', 'days', 'man', 'woman', 'child', 'world',
-    'life', 'hand', 'part', 'place', 'case', 'week', 'weeks', 'company', 'system', 'program',
-    'question', 'work', 'government', 'number', 'night', 'point', 'home', 'water',
-    'room', 'mother', 'area', 'money', 'story', 'fact', 'month', 'months', 'lot', 'right',
-    'study', 'book', 'eye', 'job', 'jobs', 'word', 'business', 'issue', 'issues', 'side', 'kind',
-    'head', 'house', 'service', 'friend', 'father', 'power', 'hour', 'hours', 'game', 'line',
-    'end', 'member', 'law', 'car', 'city', 'community', 'name', 'president', 'team', 'teams',
-    'minute', 'idea', 'kid', 'body', 'information', 'back', 'parent', 'face', 'others',
-    'level', 'office', 'door', 'health', 'person', 'art', 'war', 'history', 'party',
-    'result', 'results', 'change', 'morning', 'reason', 'research', 'girl', 'guy', 'moment',
-    'air', 'teacher', 'force', 'education', 'thing', 'things', 'stuff',
+    # Frameworks & Libraries
+    'react', 'angular', 'vue', 'node', 'nodejs', 'express', 'django', 'flask',
+    'spring', 'springboot', 'laravel', 'rails', 'asp.net', '.net', 'dotnet',
+    'jquery', 'bootstrap', 'tailwind', 'nextjs', 'nuxt', 'gatsby',
     
-    # Prepositions & conjunctions
-    'about', 'above', 'across', 'after', 'against', 'along', 'among', 'around',
-    'before', 'behind', 'below', 'beneath', 'beside', 'between', 'beyond', 'but',
-    'down', 'during', 'except', 'for', 'from', 'inside', 'into', 'like',
-    'near', 'off', 'onto', 'out', 'outside', 'over', 'past', 'since',
-    'through', 'throughout', 'till', 'toward', 'under', 'underneath', 'until',
-    'upon', 'with', 'within', 'without', 'and', 'nor', 'yet',
+    # Cloud & DevOps
+    'aws', 'azure', 'gcp', 'google cloud', 'docker', 'kubernetes', 'k8s',
+    'jenkins', 'terraform', 'ansible', 'puppet', 'chef', 'circleci', 'travis',
+    'github actions', 'gitlab', 'bitbucket', 'ci/cd', 'cicd', 'devops',
     
-    # Articles & pronouns
-    'the', 'this', 'that', 'these', 'those', 'your', 'his', 'her',
-    'its', 'our', 'their', 'what', 'which', 'who', 'whom', 'whose',
-    'she', 'they', 'him', 'them', 'myself', 'yourself',
-    'himself', 'herself', 'itself', 'ourselves', 'themselves', 'each', 'few', 'many',
-    'some', 'any', 'not', 'only', 'own', 'same', 'than', 'too', 'very',
+    # Databases
+    'mysql', 'postgresql', 'postgres', 'mongodb', 'redis', 'elasticsearch',
+    'dynamodb', 'firebase', 'oracle', 'sql server', 'sqlite', 'cassandra',
+    'mariadb', 'neo4j', 'couchdb',
     
-    # Adjectives & adverbs
-    'able', 'bad', 'best', 'better', 'big', 'black', 'certain', 'clear', 'different',
-    'early', 'easy', 'economic', 'federal', 'free', 'full', 'good', 'great', 'hard',
-    'high', 'human', 'important', 'international', 'large', 'late', 'little', 'local',
-    'long', 'low', 'major', 'military', 'national', 'new', 'old', 'other',
-    'political', 'possible', 'public', 'real', 'recent', 'right', 'small', 'social',
-    'special', 'strong', 'sure', 'true', 'white', 'whole', 'young', 'available',
-    'just', 'also', 'now', 'then', 'more', 'most', 'well', 'even', 'back', 'still',
-    'already', 'always', 'never', 'often', 'however', 'together', 'likely', 'simply',
-    'generally', 'instead', 'actually', 'usually', 'especially', 'really', 'almost',
-    'enough', 'less', 'much', 'either', 'else', 'far', 'perhaps', 'quite', 'rather',
+    # Operating Systems
+    'linux', 'ubuntu', 'centos', 'redhat', 'windows server', 'macos', 'unix',
     
-    # Common filler/generic words in job postings
-    'step', 'steps', 'center', 'informed', 'making', 'skilled', 'based', 'related',
-    'including', 'such', 'need', 'needs', 'needed', 'must', 'should', 'would', 'could',
-    'might', 'will', 'shall', 'may', 'can', 'have', 'has', 'had', 'having', 'does',
-    'did', 'doing', 'done', 'been', 'being', 'are', 'was', 'were',
-    'get', 'gets', 'got', 'getting', 'gotten', 'see', 'seen', 'seeing', 'saw',
-    'say', 'says', 'said', 'saying', 'goes', 'per', 'via', 'etc',
-    'position', 'role', 'responsibilities', 'duties', 'tasks', 'ability', 'abilities',
-    'candidate', 'candidates', 'applicant', 'applicants', 'employee', 'employer',
-    'opportunity', 'opportunities', 'environment', 'environments', 'organization',
-    'department', 'division', 'location', 'locations', 'schedule',
-    'preferred', 'required', 'requirements', 'qualifications', 'minimum', 'maximum',
-    'daily', 'annually', 'salary', 'benefits', 'compensation', 'equal', 'employment',
-    'please', 'apply', 'resume', 'cover', 'letter', 'experience', 'experienced',
-    'looking', 'seeking', 'join', 'exciting', 'dynamic', 'fast-paced', 'growing',
-    'responsible', 'ensure', 'assist', 'help', 'support', 'perform', 'complete',
-    'various', 'multiple', 'several', 'additional', 'specific', 'appropriate',
-    'necessary', 'relevant', 'effective', 'efficient', 'excellent', 'outstanding',
-    'strong', 'proven', 'demonstrated', 'successful', 'professional'
+    # IT & Networking
+    'active directory', 'tcp/ip', 'dns', 'dhcp', 'vpn', 'lan', 'wan', 'vlan',
+    'firewall', 'router', 'switch', 'cisco', 'juniper', 'palo alto',
+    'vmware', 'hyper-v', 'virtualization', 'esxi', 'vsphere',
+    
+    # Security & Cybersecurity
+    'cybersecurity', 'infosec', 'penetration testing', 'pentest', 'vulnerability',
+    'siem', 'splunk', 'wireshark', 'nmap', 'metasploit', 'burp suite',
+    'iso 27001', 'nist', 'sox', 'hipaa', 'gdpr', 'pci-dss', 'encryption',
+    'ssl', 'tls', 'oauth', 'saml', 'ldap', 'kerberos',
+    
+    # IT Tools & Platforms
+    'servicenow', 'jira', 'confluence', 'zendesk', 'freshdesk', 'remedy',
+    'salesforce', 'sap', 'sharepoint', 'office 365', 'microsoft 365', 'm365',
+    'teams', 'slack', 'zoom', 'webex', 'gsuite', 'google workspace',
+    'outlook', 'exchange', 'intune', 'sccm', 'endpoint manager',
+    
+    # Data & Analytics
+    'tableau', 'power bi', 'looker', 'qlik', 'excel', 'pandas', 'numpy',
+    'tensorflow', 'pytorch', 'scikit-learn', 'keras', 'spark', 'hadoop',
+    'etl', 'data warehouse', 'snowflake', 'databricks', 'airflow',
+    
+    # Methodologies
+    'agile', 'scrum', 'kanban', 'waterfall', 'lean', 'six sigma', 'itil',
+    'devops', 'devsecops', 'sdlc', 'ci/cd',
+    
+    # Certifications (without "certified" word)
+    'comptia', 'a+', 'network+', 'security+', 'ccna', 'ccnp', 'ccie',
+    'aws certified', 'azure certified', 'gcp certified', 'pmp', 'cissp',
+    'ceh', 'oscp', 'mcsa', 'mcse', 'rhce', 'rhcsa', 'itil',
+    
+    # Job-specific technical terms
+    'helpdesk', 'help desk', 'desktop support', 'technical support', 'it support',
+    'system administration', 'sysadmin', 'network administration', 'dba',
+    'full stack', 'fullstack', 'frontend', 'backend', 'api', 'rest', 'restful',
+    'graphql', 'microservices', 'soa', 'web services', 'soap',
+    
+    # Software & Tools
+    'git', 'github', 'gitlab', 'bitbucket', 'svn', 'mercurial',
+    'visual studio', 'vscode', 'intellij', 'eclipse', 'xcode', 'android studio',
+    'postman', 'insomnia', 'swagger', 'figma', 'sketch', 'adobe xd',
+    'photoshop', 'illustrator', 'premiere', 'after effects',
+    
+    # Hardware & Infrastructure
+    'server', 'servers', 'workstation', 'laptop', 'desktop', 'printer',
+    'scanner', 'peripheral', 'hardware', 'firmware', 'bios', 'uefi',
+    'raid', 'nas', 'san', 'backup', 'disaster recovery', 'high availability',
+    
+    # Ticketing & ITSM
+    'ticketing', 'incident management', 'problem management', 'change management',
+    'asset management', 'cmdb', 'itsm', 'itil', 'sla',
+    
+    # Communication Protocols
+    'http', 'https', 'ftp', 'sftp', 'ssh', 'telnet', 'smtp', 'imap', 'pop3',
+    'tcp', 'udp', 'icmp', 'snmp', 'ntp',
+    
+    # Specific Technologies for IT Support
+    'remote desktop', 'rdp', 'vnc', 'teamviewer', 'bomgar', 'logmein',
+    'imaging', 'deployment', 'ghost', 'wds', 'mdt', 'autopilot',
+    'group policy', 'gpo', 'registry', 'cmd', 'command line', 'terminal',
+    'scripting', 'automation', 'batch', 'vbscript',
+    
+    # Business/Enterprise Software
+    'erp', 'crm', 'hris', 'ats', 'lms', 'cms', 'ecommerce',
+    'quickbooks', 'netsuite', 'workday', 'bamboohr', 'adp',
 }
+
+# Strong action verbs - keep these for display
+ACTION_VERBS = [
+    'achieved', 'accomplished', 'administered', 'analyzed', 'built', 'collaborated',
+    'configured', 'created', 'delivered', 'deployed', 'designed', 'developed',
+    'diagnosed', 'documented', 'enhanced', 'established', 'executed', 'implemented',
+    'improved', 'installed', 'integrated', 'launched', 'led', 'maintained',
+    'managed', 'migrated', 'monitored', 'optimized', 'orchestrated', 'oversaw',
+    'reduced', 'refactored', 'resolved', 'scaled', 'secured', 'spearheaded',
+    'streamlined', 'supervised', 'supported', 'tested', 'trained', 'troubleshot',
+    'upgraded', 'automated'
+]
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
@@ -154,11 +154,14 @@ def extract_text_from_docx(filepath):
     return text
 
 def extract_keywords(text, job_description=None):
-    """Extract technical skills, action verbs, and analyze keyword matching"""
+    """Extract ONLY meaningful ATS keywords using whitelist approach"""
     text_lower = text.lower()
     
-    # Find technical skills
-    found_tech_skills = [skill for skill in TECH_SKILLS if skill.lower() in text_lower]
+    # Find technical skills from whitelist
+    found_tech_skills = []
+    for skill in ATS_KEYWORDS:
+        if skill.lower() in text_lower:
+            found_tech_skills.append(skill)
     
     # Find action verbs
     found_action_verbs = [verb for verb in ACTION_VERBS if verb.lower() in text_lower]
@@ -172,30 +175,31 @@ def extract_keywords(text, job_description=None):
     # Word count
     word_count = len(text.split())
     
-    # Job description matching - IMPROVED FILTERING
+    # Job description matching - ONLY match keywords from whitelist
     job_match = None
     if job_description:
         job_lower = job_description.lower()
-        # Only get words 4+ characters
-        job_words = set(re.findall(r'\b[a-z]{4,}\b', job_lower))
-        resume_words = set(re.findall(r'\b[a-z]{4,}\b', text_lower))
         
-        # Filter out stopwords - keep only meaningful keywords
-        important_job_keywords = [w for w in job_words if w not in STOPWORDS and len(w) >= 4]
+        # Find ATS keywords in job description
+        job_keywords = []
+        for skill in ATS_KEYWORDS:
+            if skill.lower() in job_lower:
+                job_keywords.append(skill)
         
-        matching = [w for w in important_job_keywords if w in resume_words]
-        missing = [w for w in important_job_keywords if w not in resume_words][:15]
+        # Find which job keywords are in resume
+        matching = [kw for kw in job_keywords if kw.lower() in text_lower]
+        missing = [kw for kw in job_keywords if kw.lower() not in text_lower]
         
-        match_percentage = int((len(matching) / max(len(important_job_keywords), 1)) * 100)
+        match_percentage = int((len(matching) / max(len(job_keywords), 1)) * 100)
         
         job_match = {
             "match_percentage": min(match_percentage, 100),
             "matching_keywords": matching[:20],
-            "missing_keywords": missing
+            "missing_keywords": missing[:15]
         }
     
     return {
-        "technical_skills": found_tech_skills,
+        "technical_skills": found_tech_skills[:20],
         "action_verbs": found_action_verbs,
         "metrics_count": len(metrics),
         "bullet_points": bullet_count,
@@ -324,7 +328,7 @@ def home():
     return jsonify({
         "message": "Resume Optimizer API is running!",
         "status": "online",
-        "version": "2.1 Enhanced",
+        "version": "3.0 - Whitelist Keywords",
         "timestamp": datetime.now().isoformat()
     })
 
@@ -403,7 +407,8 @@ def get_history():
 
 if __name__ == '__main__':
     print("\n" + "="*50)
-    print("Resume Optimizer Backend v2.1")
+    print("Resume Optimizer Backend v3.0")
+    print("Whitelist-based ATS Keywords")
     print("="*50)
     print("Make sure OPENAI_API_KEY is set in your .env file!")
     print("Server starting at http://localhost:5000")
