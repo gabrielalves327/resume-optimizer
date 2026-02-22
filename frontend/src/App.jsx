@@ -843,8 +843,84 @@ function App() {
             {analysisResult.education && (<div className="section-card" style={{borderLeftColor: getStatusColor(analysisResult.education.status)}}><h3>🎓 Education</h3><div className="section-score">Score: {analysisResult.education.score}/100</div><p>{analysisResult.education.feedback}</p></div>)}
           </div>
 
+          {/* Technical Skills & Action Verbs */}
+          {(analysisResult.technical_skills?.length > 0 || analysisResult.action_verbs?.length > 0) && (
+            <div className="keywords-card">
+              {analysisResult.technical_skills?.length > 0 && (
+                <div className="keyword-section">
+                  <h4>🛠️ Technical Skills Detected ({analysisResult.technical_skills.length})</h4>
+                  <div className="keyword-tags">
+                    {analysisResult.technical_skills.map((skill, index) => (
+                      <span key={index} className="keyword-tag skill-tag">{skill}</span>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {analysisResult.action_verbs?.length > 0 && (
+                <div className="keyword-section">
+                  <h4>⚡ Action Verbs Found ({analysisResult.action_verbs.length})</h4>
+                  <div className="keyword-tags">
+                    {analysisResult.action_verbs.map((verb, index) => (
+                      <span key={index} className="keyword-tag verb-tag">{verb}</span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Strengths & Weaknesses */}
+          <div className="strengths-weaknesses-grid">
+            {analysisResult.strengths?.length > 0 && (
+              <div className="strengths-card">
+                <h3>💪 Strengths</h3>
+                <ul>
+                  {analysisResult.strengths.map((strength, index) => (
+                    <li key={index}>{strength}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {analysisResult.weaknesses?.length > 0 && (
+              <div className="weaknesses-card">
+                <h3>⚠️ Weaknesses</h3>
+                <ul>
+                  {analysisResult.weaknesses.map((weakness, index) => (
+                    <li key={index}>{weakness}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+
           {analysisResult.ats_score && (<div className="ats-card"><h3>🤖 ATS Compatibility Score</h3><div className="ats-score">{analysisResult.ats_score}/100</div></div>)}
+
+          {/* Quick Wins */}
+          {analysisResult.quick_wins?.length > 0 && (
+            <div className="quick-wins-card">
+              <h3>🚀 Quick Wins</h3>
+              <p className="card-subtitle">Easy fixes you can make right now</p>
+              <ul>
+                {analysisResult.quick_wins.map((win, index) => (
+                  <li key={index}>{win}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+
           {analysisResult.key_improvements && (<div className="improvements-card"><h3>💡 Key Improvements</h3><ul>{analysisResult.key_improvements.map((improvement, index) => (<li key={index}>{improvement}</li>))}</ul></div>)}
+
+          {/* ATS Tips */}
+          {analysisResult.ats_tips?.length > 0 && (
+            <div className="ats-tips-card">
+              <h3>📋 ATS Optimization Tips</h3>
+              <ul>
+                {analysisResult.ats_tips.map((tip, index) => (
+                  <li key={index}>{tip}</li>
+                ))}
+              </ul>
+            </div>
+          )}
         </div>
       )}
 
